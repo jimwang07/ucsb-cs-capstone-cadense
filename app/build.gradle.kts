@@ -6,14 +6,12 @@ plugins {
 
 android {
     namespace = "com.example.testlockscreen"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.testlockscreen"
-        minSdk = 30
-        targetSdk = 36
+        minSdk = 28
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0"
 
@@ -35,7 +33,6 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
-    useLibrary("wear-sdk")
     buildFeatures {
         compose = true
     }
@@ -51,9 +48,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
-    implementation(libs.core.splashscreen)
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.ui.test.junit4)
+    implementation("androidx.wear.compose:compose-foundation:1.2.1")
+    implementation("androidx.wear.compose:compose-material:1.2.1")
     debugImplementation(libs.ui.tooling)
-    debugImplementation(libs.ui.test.manifest)
 }
