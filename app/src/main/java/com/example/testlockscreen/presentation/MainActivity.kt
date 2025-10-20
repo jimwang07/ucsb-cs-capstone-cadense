@@ -3,13 +3,12 @@ package com.example.testlockscreen.presentation
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.wear.compose.material.Text
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import com.example.testlockscreen.navigation.WearAppNavHost
+import com.example.testlockscreen.presentation.theme.TestLockScreenTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,18 +21,14 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun WearApp() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Greeting()
+    TestLockScreenTheme {
+        val navController = rememberSwipeDismissableNavController()
+        WearAppNavHost(navController = navController)
     }
 }
 
+@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
 @Composable
-fun Greeting() {
-    Text(
-        textAlign = TextAlign.Center,
-        text = "hello world",
-    )
+fun DefaultPreview() {
+    WearApp()
 }

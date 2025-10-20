@@ -1,8 +1,17 @@
 <resources>
-    <string name="app_name">Test Lock Screen</string>
-    <!--
-    This string is used for square devices and overridden by hello_world in
-    values-round/strings.xml for round devices.
-    -->
-    <string name="hello_world">From the Square world,\nHello, %1$s!</string>
+    <string name="app_name">Rehab App</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="end_session">End Session</string>
+    <string name="save_and_finish">Save and Finish</string>
+    <string name="discard">Discard</string>
+    <string name="done">Done</string>
+    <string name="metronome_training">Metronome Training</string>
+    <string name="visual_cue_training">Visual Cue Training</string>
+    <string name="session_summary">Session Summary</string>
+    <string name="settings">Settings</string>
+    <string name="default_bpm">Default BPM</string>
+    <string name="default_visual_cue_interval">Default Cue Interval</string>
+    <string name="haptics_enabled">Haptics</string>
+    <string name="text_size_scale">Text Size</string>
 </resources>
