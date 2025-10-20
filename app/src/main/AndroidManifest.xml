@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.testlockscreen.presentation">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Declare that this is a Wear OS app -->
-    <uses-feature android:name="android.hardware.type.watch" />
+    <!-- Wear OS device only -->
+    <uses-feature
+        android:name="android.hardware.type.watch"
+        android:required="true" />
 
-    <!-- Permissions required for kiosk / device admin -->
+    <!-- Device admin related permissions -->
     <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
     <uses-permission android:name="android.permission.MANAGE_DEVICE_ADMINS" />
 
@@ -16,17 +17,17 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
 
-        <!-- Required for Wear OS apps -->
+        <!-- Require Wear OS shared library -->
         <uses-library
             android:name="com.google.android.wearable"
             android:required="true" />
 
-        <!-- Set to true if standalone (no companion app needed) -->
+        <!-- Standalone Wear app -->
         <meta-data
             android:name="com.google.android.wearable.standalone"
             android:value="true" />
 
-        <!-- Your main activity -->
+        <!-- Launcher activity already has exported set -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -36,10 +37,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Required Device Admin Receiver for lock task mode -->
+        <!-- Device Admin Receiver must declare android:exported on Android 12+ -->
         <receiver
             android:name=".MyDeviceAdminReceiver"
-            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
             <meta-data
                 android:name="android.app.device_admin"
                 android:resource="@xml/device_admin_receiver" />

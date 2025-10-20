@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.testlockscreen"
+    namespace = "com.example.testlockscreen.presentation"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.testlockscreen"
+        applicationId = "com.example.testlockscreen.presentation"
         minSdk = 30
         targetSdk = 36
         versionCode = 1
