@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.testlockscreen.presentation"
-        minSdk = 30
+        minSdk = 28
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
