@@ -1,70 +1,102 @@
 package com.example.testlockscreen.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import com.example.testlockscreen.data.db.AppDatabase
+import com.example.testlockscreen.data.remote.StubRemoteLoggingDataSource
+import com.example.testlockscreen.data.repository.SessionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
-class MainViewModel : ViewModel() {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    enum class SessionState {
+        Idle,
+        Running,
+        Paused
+    }
+
+    data class SessionSummary(
+        val elapsedTime: String,
+        val mode: String,
+        val count: Int
+    )
+
+    private val sessionRepository: SessionRepository
+
+    init {
+        val sessionDao = AppDatabase.getDatabase(application).sessionDao()
+        val remoteDataSource = StubRemoteLoggingDataSource()
+        sessionRepository = SessionRepository(sessionDao, remoteDataSource)
+    }
+
+    private val _sessionState = MutableStateFlow(SessionState.Idle)
+    val sessionState: StateFlow<SessionState> = _sessionState
+
+    private val _bpm = MutableStateFlow(60)
+    val bpm: StateFlow<Int> = _bpm
+
+    private val _interval = MutableStateFlow(1.0)
+    val interval: StateFlow<Double> = _interval
 
     private val _isRecording = MutableStateFlow(false)
-    val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
+    val isRecording: StateFlow<Boolean> = _isRecording
 
-    private val _metronomeBPM = MutableStateFlow(60)
-    val metronomeBPM: StateFlow<Int> = _metronomeBPM.asStateFlow()
+    private val _connectionState = MutableStateFlow("Connected")
+    val connectionState: StateFlow<String> = _connectionState
 
-    private val _visualCueInterval = MutableStateFlow(1.0f)
-    val visualCueInterval: StateFlow<Float> = _visualCueInterval.asStateFlow()
+    private val _mode = MutableStateFlow("Metronome")
+    val mode: StateFlow<String> = _mode
+    
+    private val _sessionSummary = MutableStateFlow(SessionSummary("0s", "N/A", 0))
+    val sessionSummary: StateFlow<SessionSummary> = _sessionSummary
 
-    private val _hapticsEnabled = MutableStateFlow(true)
-    val hapticsEnabled: StateFlow<Boolean> = _hapticsEnabled.asStateFlow()
-
-    private val _bluetoothStatus = MutableStateFlow("Not Connected") // TODO: Implement actual Bluetooth status
-    val bluetoothStatus: StateFlow<String> = _bluetoothStatus.asStateFlow()
-
-    private val _toastMessage = MutableStateFlow<String?>(null)
-    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
-
-    fun startSession(mode: String) {
+    fun startSession() {
+        _sessionState.value = SessionState.Running
         _isRecording.value = true
-        _toastMessage.value = "Session started!"
     }
 
     fun stopSession() {
-        _isRecording.value = false
-        _toastMessage.value = "Session paused."
-    }
-
-    fun endSession(notes: String?, saveRemotely: Boolean = false) {
-        _toastMessage.value = "Session ended."
+        _sessionState.value = SessionState.Paused
         _isRecording.value = false
     }
 
-    fun setMetronomeBPM(bpm: Int) {
-        _metronomeBPM.value = bpm.coerceIn(40, 120)
+    fun endSession() {
+        _sessionState.value = SessionState.Idle
+        _isRecording.value = false
+        // This would be calculated based on real data
+        _sessionSummary.value = SessionSummary("1m 23s", _mode.value, 150)
+    }
+    
+    fun saveSession() {
+        // Here you would implement saving logic with the repository
     }
 
-    fun increaseMetronomeBPM() {
-        _metronomeBPM.value = (_metronomeBPM.value + 1).coerceAtMost(120)
+    fun discardSession() {
+        // Nothing to do here if we are not persisting anything yet
     }
 
-    fun decreaseMetronomeBPM() {
-        _metronomeBPM.value = (_metronomeBPM.value - 1).coerceAtLeast(40)
+    fun incBpm() {
+        _bpm.value = (_bpm.value + 1).coerceIn(40, 120)
     }
 
-    fun setDefaultMetronomeBPM() {
-        _metronomeBPM.value = 60
+    fun decBpm() {
+        _bpm.value = (_bpm.value - 1).coerceIn(40, 120)
     }
 
-    fun setVisualCueInterval(interval: Float) {
-        _visualCueInterval.value = interval.coerceIn(0.5f, 3.0f)
+    fun setBpm(newBpm: Int) {
+        _bpm.value = newBpm.coerceIn(40, 120)
     }
 
-    fun setHapticsEnabled(enabled: Boolean) {
-        _hapticsEnabled.value = enabled
+    fun incInterval() {
+        _interval.value = (_interval.value + 0.5).coerceIn(0.5, 3.0)
     }
 
-    fun clearToastMessage() {
-        _toastMessage.value = null
+    fun decInterval() {
+        _interval.value = (_interval.value - 0.5).coerceIn(0.5, 3.0)
+    }
+
+    fun setInterval(newInterval: Double) {
+        _interval.value = newInterval.coerceIn(0.5, 3.0)
     }
 }

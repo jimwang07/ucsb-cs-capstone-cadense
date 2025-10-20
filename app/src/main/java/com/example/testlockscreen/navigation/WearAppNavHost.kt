@@ -2,6 +2,7 @@ package com.example.testlockscreen.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
@@ -11,11 +12,13 @@ import com.example.testlockscreen.ui.LandingPage
 import com.example.testlockscreen.ui.MetronomeTrainingScreen
 import com.example.testlockscreen.ui.ModeSelectionScreen
 import com.example.testlockscreen.ui.VisualCueTrainingScreen
+import com.example.testlockscreen.viewmodel.MainViewModel
 
 @Composable
 fun WearAppNavHost(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    mainViewModel: MainViewModel = viewModel()
 ) {
     SwipeDismissableNavHost(
         navController = navController,
@@ -23,22 +26,25 @@ fun WearAppNavHost(
         modifier = modifier
     ) {
         composable(Screen.Landing.route) {
-            LandingPage(navController = navController)
+            LandingPage(
+                onStartClick = { navController.navigate(Screen.ModeSelection.route) },
+                onSettingsClick = { navController.navigate(Screen.Settings.route) }
+            )
         }
         composable(Screen.ModeSelection.route) {
             ModeSelectionScreen(navController = navController)
         }
         composable(Screen.MetronomeTraining.route) {
-            MetronomeTrainingScreen(navController = navController)
+            MetronomeTrainingScreen(navController = navController, mainViewModel = mainViewModel)
         }
         composable(Screen.VisualCueTraining.route) {
-            VisualCueTrainingScreen(navController = navController)
+            VisualCueTrainingScreen(navController = navController, mainViewModel = mainViewModel)
         }
         composable(Screen.EndSession.route) {
-            EndSessionScreen(navController = navController)
+            EndSessionScreen(navController = navController, mainViewModel = mainViewModel)
         }
         composable(Screen.Settings.route) {
-            BasicSettingsScreen(navController = navController)
+            BasicSettingsScreen(onDone = { navController.popBackStack() })
         }
     }
 }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Rehab App</string>
+    <string name="app_name">STRIDE</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
     <string name="end_session">End Session</string>
