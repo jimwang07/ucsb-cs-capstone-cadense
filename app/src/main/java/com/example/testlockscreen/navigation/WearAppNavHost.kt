@@ -11,6 +11,7 @@ import com.example.testlockscreen.ui.EndSessionScreen
 import com.example.testlockscreen.ui.LandingPage
 import com.example.testlockscreen.ui.MetronomeTrainingScreen
 import com.example.testlockscreen.ui.ModeSelectionScreen
+import com.example.testlockscreen.ui.PastSessionsScreen
 import com.example.testlockscreen.ui.VisualCueTrainingScreen
 import com.example.testlockscreen.viewmodel.MainViewModel
 
@@ -28,7 +29,8 @@ fun WearAppNavHost(
         composable(Screen.Landing.route) {
             LandingPage(
                 onStartClick = { navController.navigate(Screen.ModeSelection.route) },
-                onSettingsClick = { navController.navigate(Screen.Settings.route) }
+                onSettingsClick = { navController.navigate(Screen.Settings.route) },
+                onPastSessionsClick = { navController.navigate(Screen.PastSessions.route) }
             )
         }
         composable(Screen.ModeSelection.route) {
@@ -44,7 +46,20 @@ fun WearAppNavHost(
             EndSessionScreen(navController = navController, mainViewModel = mainViewModel)
         }
         composable(Screen.Settings.route) {
-            BasicSettingsScreen(onDone = { navController.popBackStack() })
+            BasicSettingsScreen(
+                onHome = {
+                    navController.navigate(Screen.Landing.route) {
+                        popUpTo(Screen.Landing.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(Screen.PastSessions.route) {
+            PastSessionsScreen(onHome = {
+                navController.navigate(Screen.Landing.route) {
+                    popUpTo(Screen.Landing.route) { inclusive = true }
+                }
+            })
         }
     }
 }

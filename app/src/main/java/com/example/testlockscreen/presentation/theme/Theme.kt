@@ -8,12 +8,14 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.MaterialTheme
 
+private val Accent = Color(0xFF29EAB6)
+
 val wearColorPalette = Colors(
     background = Color.Black,
     onBackground = Color.White,
-    primary = Color(0xFF4CAF50),
+    primary = Accent,
     onPrimary = Color.Black,
-    secondary = Color(0xFF4CAF50),
+    secondary = Accent,
     onSecondary = Color.Black,
     error = Color(0xFFF44336),
     onError = Color.White,

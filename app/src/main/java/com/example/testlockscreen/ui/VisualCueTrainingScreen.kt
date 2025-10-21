@@ -1,164 +1,148 @@
 package com.example.testlockscreen.ui
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.PositionIndicator
+import androidx.wear.compose.material.ScalingLazyColumn
+import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
+import androidx.wear.compose.material.Vignette
+import androidx.wear.compose.material.VignettePosition
+import androidx.wear.compose.material.rememberScalingLazyListState
 import com.example.testlockscreen.navigation.Screen
 import com.example.testlockscreen.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 
 @Composable
 fun VisualCueTrainingScreen(
     navController: NavHostController,
     mainViewModel: MainViewModel = viewModel()
 ) {
-    val interval by mainViewModel.interval.collectAsState()
+    val bpm by mainViewModel.bpm.collectAsState()
+    val visualColor by mainViewModel.visualColor.collectAsState()
     val sessionState by mainViewModel.sessionState.collectAsState()
     val isRecording by mainViewModel.isRecording.collectAsState()
     val connectionState by mainViewModel.connectionState.collectAsState()
 
-    val coroutineScope = rememberCoroutineScope()
     var showVisualCue by remember { mutableStateOf(false) }
 
-    LaunchedEffect(sessionState, interval) {
+    LaunchedEffect(sessionState, bpm, visualColor) {
+        showVisualCue = false
         if (sessionState == MainViewModel.SessionState.Running) {
-            while (true) {
-                showVisualCue = !showVisualCue
-                delay((interval * 1000).toLong())
+            val delayMs = (60_000.0 / bpm).toLong().coerceAtLeast(200L)
+            while (isActive) {
+                showVisualCue = true
+                delay(delayMs / 2)
+                showVisualCue = false
+                delay(delayMs / 2)
             }
-        } else {
-            showVisualCue = false
         }
     }
 
-    val backgroundColor by animateFloatAsState(
-        targetValue = if (showVisualCue) 1f else 0f,
-        animationSpec = tween(durationMillis = 250)
+    val backgroundColor by animateColorAsState(
+        targetValue = if (showVisualCue) visualColor.color else Color.Black,
+        animationSpec = tween(durationMillis = 150),
+        label = "visualCueColor"
     )
 
-    val focusRequester = remember { FocusRequester() }
-    val lazyListState = rememberLazyListState()
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
+    val listState = rememberScalingLazyListState()
+    val textColor = if (backgroundColor.luminance() > 0.5f) Color.Black else Color.White
 
     Scaffold(
-        topBar = {
-            TimeText()
-            StatusIndicatorChip(
-                isRecording = isRecording,
-                connectionState = connectionState
-            )
-        },
-        bottomBar = {
-            SessionControlsBar(
-                state = sessionState,
-                onStart = { mainViewModel.startSession() },
-                onStop = { mainViewModel.stopSession() },
-                onEnd = {
-                    mainViewModel.endSession()
-                    navController.navigate(Screen.EndSession.route) {
-                        popUpTo(Screen.Landing.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-    ) { padding ->
+        timeText = { TimeText() },
+        vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
+        positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .background(Color.White.copy(alpha = backgroundColor))
+                .background(backgroundColor)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp)
-                    .onRotaryScrollEvent {
-                        if (it.verticalScrollPixels > 0) {
-                            mainViewModel.incInterval()
-                        } else {
-                            mainViewModel.decInterval()
-                        }
-                        true
-                    }
-                    .focusRequester(focusRequester)
-                    .focusable(),
+            ScalingLazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = listState,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = "Interval: $interval s",
-                    style = MaterialTheme.typography.title2,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(onClick = { mainViewModel.decInterval() }) {
-                        Text(text = "-0.5s")
-                    }
-                    Button(onClick = { mainViewModel.incInterval() }) {
-                        Text(text = "+0.5s")
+                item {
+                    StatusIndicatorChip(
+                        isRecording = isRecording,
+                        connectionState = connectionState
+                    )
+                }
+                item {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Visual Metronome",
+                            style = MaterialTheme.typography.title1,
+                            textAlign = TextAlign.Center,
+                            color = textColor
+                        )
+                        Text(
+                            text = "$bpm BPM",
+                            style = MaterialTheme.typography.display1,
+                            textAlign = TextAlign.Center,
+                            color = textColor
+                        )
+                        Text(
+                            text = "Flashing between black and ${visualColor.name}.",
+                            style = MaterialTheme.typography.body1,
+                            textAlign = TextAlign.Center,
+                            color = textColor
+                        )
+                        Text(
+                            text = "Press start to begin.",
+                            style = MaterialTheme.typography.body1,
+                            textAlign = TextAlign.Center,
+                            color = textColor
+                        )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                LazyRow(
-                    state = lazyListState,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0)) { preset ->
-                        Chip(onClick = { mainViewModel.setInterval(preset) }, label = { Text(text = "$preset") })
-                    }
-                }
-                coroutineScope.launch {
-                    lazyListState.scrollBy(0f)
+                item {
+                    SessionControlsBar(
+                        state = sessionState,
+                        onHome = {
+                            navController.navigate(Screen.Landing.route) {
+                                popUpTo(Screen.Landing.route) { inclusive = true }
+                            }
+                        },
+                        onStart = { mainViewModel.startSession() },
+                        onStop = { mainViewModel.stopSession() },
+                        onEnd = {
+                            mainViewModel.endSession()
+                            navController.navigate(Screen.EndSession.route) {
+                                popUpTo(Screen.Landing.route) { inclusive = true }
+                            }
+                        }
+                    )
                 }
             }
         }

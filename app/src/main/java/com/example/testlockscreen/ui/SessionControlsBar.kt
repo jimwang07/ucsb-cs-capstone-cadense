@@ -5,22 +5,21 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.Text
 import com.example.testlockscreen.viewmodel.MainViewModel
 
 @Composable
 fun SessionControlsBar(
     state: MainViewModel.SessionState,
+    onHome: () -> Unit,
     onStart: () -> Unit,
     onStop: () -> Unit,
     onEnd: () -> Unit,
@@ -28,43 +27,58 @@ fun SessionControlsBar(
     val context = LocalContext.current
     val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Button(
+        ControlChip(
+            label = "Home",
+            colors = ChipDefaults.secondaryChipColors(),
+            onClick = onHome
+        )
+        ControlChip(
+            label = "Start",
+            enabled = state != MainViewModel.SessionState.Running,
+            colors = ChipDefaults.primaryChipColors(),
             onClick = {
                 onStart()
                 vibrate(vibrator, 50)
-            },
-            enabled = state != MainViewModel.SessionState.Running,
-            modifier = Modifier.size(ButtonDefaults.LargeButtonSize)
-        ) {
-            Text("Start")
-        }
-
-        Button(
-            onClick = onStop,
+            }
+        )
+        ControlChip(
+            label = "Pause",
             enabled = state == MainViewModel.SessionState.Running,
-            modifier = Modifier.size(ButtonDefaults.LargeButtonSize)
-        ) {
-            Text("Stop")
-        }
-
-        Button(
+            colors = ChipDefaults.secondaryChipColors(),
+            onClick = onStop
+        )
+        ControlChip(
+            label = "End",
+            enabled = state != MainViewModel.SessionState.Idle,
+            colors = ChipDefaults.secondaryChipColors(),
             onClick = {
                 onEnd()
                 vibrate(vibrator, 200)
-            },
-            enabled = state != MainViewModel.SessionState.Idle,
-            colors = ButtonDefaults.secondaryButtonColors(),
-            modifier = Modifier.size(ButtonDefaults.LargeButtonSize)
-        ) {
-            Text("End")
-        }
+            }
+        )
     }
+}
+
+@Composable
+private fun ControlChip(
+    label: String,
+    enabled: Boolean = true,
+    colors: androidx.wear.compose.material.ChipColors,
+    onClick: () -> Unit
+) {
+    androidx.wear.compose.material.Chip(
+        onClick = onClick,
+        enabled = enabled,
+        colors = colors,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 private fun vibrate(vibrator: Vibrator, milliseconds: Long) {

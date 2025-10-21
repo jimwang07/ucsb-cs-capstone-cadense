@@ -1,19 +1,9 @@
 package com.example.testlockscreen.ui
 
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -23,23 +13,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.rotary.onRotaryScrollEvent
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.PositionIndicator
+import androidx.wear.compose.material.ScalingLazyColumn
+import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
-import com.example.testlockscreen.haptics.HapticsController
+import androidx.wear.compose.material.Vignette
+import androidx.wear.compose.material.VignettePosition
+import androidx.wear.compose.material.rememberScalingLazyListState
+import com.example.testlockscreen.audio.AudioMetronome
 import com.example.testlockscreen.navigation.Screen
 import com.example.testlockscreen.viewmodel.MainViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun MetronomeTrainingScreen(
@@ -51,100 +40,85 @@ fun MetronomeTrainingScreen(
     val isRecording by mainViewModel.isRecording.collectAsState()
     val connectionState by mainViewModel.connectionState.collectAsState()
 
-    val hapticsController = HapticsController(LocalContext.current)
     val coroutineScope = rememberCoroutineScope()
+    val metronome = remember { AudioMetronome() }
 
     DisposableEffect(Unit) {
-        onDispose {
-            hapticsController.cancelHaptics()
+        onDispose { metronome.stop() }
+    }
+
+    LaunchedEffect(sessionState, bpm) {
+        if (sessionState == MainViewModel.SessionState.Running) {
+            metronome.start(coroutineScope, bpm)
+        } else {
+            metronome.stop()
         }
     }
 
-    val focusRequester = remember { FocusRequester() }
-    val lazyListState = rememberLazyListState()
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
+    val listState = rememberScalingLazyListState()
 
     Scaffold(
-        topBar = {
-            TimeText()
-            StatusIndicatorChip(
-                isRecording = isRecording,
-                connectionState = connectionState
-            )
-        },
-        bottomBar = {
-            SessionControlsBar(
-                state = sessionState,
-                onStart = {
-                    mainViewModel.startSession()
-                    hapticsController.playMetronomeBeat(coroutineScope, bpm)
-                },
-                onStop = {
-                    mainViewModel.stopSession()
-                    hapticsController.cancelHaptics()
-                },
-                onEnd = {
-                    mainViewModel.endSession()
-                    hapticsController.cancelHaptics()
-                    navController.navigate(Screen.EndSession.route) {
-                        popUpTo(Screen.Landing.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
+        timeText = { TimeText() },
+        vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
+        positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
+    ) {
+        ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .onRotaryScrollEvent {
-                    if (it.verticalScrollPixels > 0) {
-                        mainViewModel.incBpm()
-                    } else {
-                        mainViewModel.decBpm()
-                    }
-                    true
-                }
-                .focusRequester(focusRequester)
-                .focusable(),
+                .background(MaterialTheme.colors.background),
+            state = listState,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "$bpm BPM",
-                style = MaterialTheme.typography.display1,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(onClick = { mainViewModel.decBpm() }) {
-                    Text(text = "-1")
-                }
-                Button(onClick = { mainViewModel.incBpm() }) {
-                    Text(text = "+1")
-                }
+            item {
+                StatusIndicatorChip(
+                    isRecording = isRecording,
+                    connectionState = connectionState
+                )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            LazyRow(
-                state = lazyListState,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(listOf(40, 60, 80, 100, 120)) { preset ->
-                    Chip(onClick = { mainViewModel.setBpm(preset) }, label = { Text(text = preset.toString()) })
-                }
+            item {
+                Text(
+                    text = "Auditory Metronome",
+                    style = MaterialTheme.typography.title1,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colors.primary
+                )
             }
-            coroutineScope.launch {
-                lazyListState.scrollBy(0f)
+            item {
+                Text(
+                    text = "$bpm BPM",
+                    style = MaterialTheme.typography.display1,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colors.onBackground
+                )
+            }
+            item {
+                Text(
+                    text = "Press start to begin the beat.",
+                    style = MaterialTheme.typography.body1,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colors.onSurface
+                )
+            }
+            item {
+                SessionControlsBar(
+                    state = sessionState,
+                    onHome = {
+                        navController.navigate(Screen.Landing.route) {
+                            popUpTo(Screen.Landing.route) { inclusive = true }
+                        }
+                    },
+                    onStart = { mainViewModel.startSession() },
+                    onStop = { mainViewModel.stopSession() },
+                    onEnd = {
+                        mainViewModel.endSession()
+                        metronome.stop()
+                        navController.navigate(Screen.EndSession.route) {
+                            popUpTo(Screen.Landing.route) { inclusive = true }
+                        }
+                    }
+                )
             }
         }
     }

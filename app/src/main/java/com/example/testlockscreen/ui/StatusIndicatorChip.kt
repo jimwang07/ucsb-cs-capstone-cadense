@@ -38,7 +38,7 @@ fun StatusIndicatorChip(
         Text(
             text = connectionState,
             style = MaterialTheme.typography.body1,
-            color = Color.White
+            color = MaterialTheme.colors.primary
         )
     }
 }
