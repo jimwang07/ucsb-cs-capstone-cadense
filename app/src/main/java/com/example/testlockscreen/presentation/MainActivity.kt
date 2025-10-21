@@ -31,8 +31,15 @@ class MainActivity : ComponentActivity() {
         // 🔒 Enter kiosk mode
         val dpm = getSystemService(DevicePolicyManager::class.java)
         val component = ComponentName(this, MyDeviceAdminReceiver::class.java)
-        dpm.setLockTaskPackages(component, arrayOf(packageName))
-        startLockTask()
+
+// Only try to set lock task packages if DevicePolicyManager is available
+        try {
+            dpm.setLockTaskPackages(component, arrayOf(packageName))
+            startLockTask() // may throw SecurityException on emulator
+        } catch (e: SecurityException) {
+            // Emulator doesn’t allow device-owner lock task → ignore
+            e.printStackTrace()
+        }
 
         // 🧭 Compose UI
         setContent {
