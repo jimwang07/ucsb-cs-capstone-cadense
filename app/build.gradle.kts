@@ -48,7 +48,9 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.wear.compose:compose-foundation:1.2.1")
     implementation("androidx.wear.compose:compose-material:1.2.1")
+    implementation("androidx.wear.compose:compose-navigation:1.2.1")
     debugImplementation(libs.ui.tooling)
 }
