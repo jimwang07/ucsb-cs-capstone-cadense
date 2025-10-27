@@ -26,7 +26,6 @@ class MetronomeViewModel : ViewModel() {
     private var stopwatchJob: Job? = null
 
     private var timeUntilNextBeat = 0L
-    private var lastTickTime = 0L
 
     private var stopwatchStartTime = 0L
     private var pausedStopwatchTime = 0L
@@ -45,30 +44,19 @@ class MetronomeViewModel : ViewModel() {
 
     private fun start() {
         _isRunning.value = true
-        lastTickTime = System.currentTimeMillis()
         stopwatchStartTime = System.currentTimeMillis()
         metronomeJob = viewModelScope.launch {
             val delayMillis = 60000L / _bpm.value
+            var remainingDelay = if (timeUntilNextBeat > 0) timeUntilNextBeat else delayMillis
 
             if (_beatCount.value == 0) {
-                // First ever start
                 _beatCount.value++
-                lastTickTime = System.currentTimeMillis()
-                delay(delayMillis)
-            } else if (timeUntilNextBeat > 0) {
-                // Resuming from pause
-                delay(timeUntilNextBeat)
-            } else {
-                // Fallback
-                delay(delayMillis)
             }
 
-            // Main loop
             while (_isRunning.value) {
+                delay(remainingDelay)
                 _beatCount.value++
-                timeUntilNextBeat = 0L
-                lastTickTime = System.currentTimeMillis()
-                delay(delayMillis)
+                remainingDelay = delayMillis
             }
         }
 
@@ -89,13 +77,8 @@ class MetronomeViewModel : ViewModel() {
         pausedStopwatchTime += System.currentTimeMillis() - stopwatchStartTime
 
         val delayMillis = 60000L / _bpm.value
-        val elapsedTime = System.currentTimeMillis() - lastTickTime
-
-        timeUntilNextBeat = if (elapsedTime < delayMillis) {
-            delayMillis - elapsedTime
-        } else {
-            0L
-        }
+        val elapsedTime = pausedStopwatchTime % delayMillis
+        timeUntilNextBeat = delayMillis - elapsedTime
     }
 
     fun stop() {
@@ -103,7 +86,6 @@ class MetronomeViewModel : ViewModel() {
         _beatCount.value = 0
         _stopwatch.value = 0
         timeUntilNextBeat = 0L
-        lastTickTime = 0L
         pausedStopwatchTime = 0L
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
