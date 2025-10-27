@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Slider
+import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -88,7 +88,7 @@ fun BasicSettingsScreen(
         }
         Slider(
             value = scale,
-            onValueChange = { scale = it },
+            onValueChange = { scale = it},
             valueRange = 1.0f..1.5f,
             steps = 4
         )

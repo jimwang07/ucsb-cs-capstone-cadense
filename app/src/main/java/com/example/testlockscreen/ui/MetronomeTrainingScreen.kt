@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.Scaffold
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -70,31 +70,7 @@ fun MetronomeTrainingScreen(
     Scaffold(
         topBar = {
             TimeText()
-            StatusIndicatorChip(
-                isRecording = isRecording,
-                connectionState = connectionState
-            )
         },
-        bottomBar = {
-            SessionControlsBar(
-                state = sessionState,
-                onStart = {
-                    mainViewModel.startSession()
-                    hapticsController.playMetronomeBeat(coroutineScope, bpm)
-                },
-                onStop = {
-                    mainViewModel.stopSession()
-                    hapticsController.cancelHaptics()
-                },
-                onEnd = {
-                    mainViewModel.endSession()
-                    hapticsController.cancelHaptics()
-                    navController.navigate(Screen.EndSession.route) {
-                        popUpTo(Screen.Landing.route) { inclusive = true }
-                    }
-                }
-            )
-        }
     ) { padding ->
         Column(
             modifier = Modifier
