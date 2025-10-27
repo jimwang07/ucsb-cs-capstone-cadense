@@ -25,6 +25,11 @@ class MetronomeViewModel : ViewModel() {
     private var metronomeJob: Job? = null
     private var stopwatchJob: Job? = null
 
+    private var timeUntilNextBeat = 0L
+
+    private var stopwatchStartTime = 0L
+    private var pausedStopwatchTime = 0L
+
     fun setBpm(newBpm: Int) {
         _bpm.value = newBpm
     }
@@ -39,17 +44,27 @@ class MetronomeViewModel : ViewModel() {
 
     private fun start() {
         _isRunning.value = true
+        stopwatchStartTime = System.currentTimeMillis()
         metronomeJob = viewModelScope.launch {
-            while (_isRunning.value) {
+            val delayMillis = 60000L / _bpm.value
+            var remainingDelay = if (timeUntilNextBeat > 0) timeUntilNextBeat else delayMillis
+
+            if (_beatCount.value == 0) {
                 _beatCount.value++
-                val delayMillis = 60000L / _bpm.value
-                delay(delayMillis)
+            }
+
+            while (_isRunning.value) {
+                delay(remainingDelay)
+                _beatCount.value++
+                remainingDelay = delayMillis
             }
         }
+
         stopwatchJob = viewModelScope.launch {
             while (_isRunning.value) {
-                delay(1000)
-                _stopwatch.value++
+                val elapsedTime = pausedStopwatchTime + (System.currentTimeMillis() - stopwatchStartTime)
+                _stopwatch.value = elapsedTime / 1000
+                delay(100)
             }
         }
     }
@@ -58,12 +73,20 @@ class MetronomeViewModel : ViewModel() {
         _isRunning.value = false
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
+
+        pausedStopwatchTime += System.currentTimeMillis() - stopwatchStartTime
+
+        val delayMillis = 60000L / _bpm.value
+        val elapsedTime = pausedStopwatchTime % delayMillis
+        timeUntilNextBeat = delayMillis - elapsedTime
     }
 
     fun stop() {
         _isRunning.value = false
         _beatCount.value = 0
         _stopwatch.value = 0
+        timeUntilNextBeat = 0L
+        pausedStopwatchTime = 0L
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
     }
