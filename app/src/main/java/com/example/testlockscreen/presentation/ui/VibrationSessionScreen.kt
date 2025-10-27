@@ -1,3 +1,4 @@
+
 package com.example.testlockscreen.presentation.ui
 
 import androidx.compose.foundation.layout.Arrangement
@@ -10,16 +11,21 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
+import com.example.testlockscreen.haptics.HapticsController
 import com.example.testlockscreen.presentation.viewmodel.MetronomeViewModel
 
 @Composable
@@ -30,6 +36,19 @@ fun VibrationSessionScreen(
     val isRunning by viewModel.isRunning.collectAsState()
     val stopwatch by viewModel.stopwatch.collectAsState()
     val bpm by viewModel.bpm.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val hapticsController = remember { HapticsController(context) }
+
+    DisposableEffect(Unit) {
+        hapticsController.startObserving(scope, viewModel.isRunning, viewModel.bpm)
+
+        onDispose {
+            // This space is intentionally left blank.
+            // The observation is cancelled automatically when the scope is cancelled
+            // when the composable is disposed.
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
