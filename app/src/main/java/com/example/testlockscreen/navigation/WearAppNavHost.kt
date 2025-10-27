@@ -6,19 +6,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
-import com.example.testlockscreen.ui.BasicSettingsScreen
-import com.example.testlockscreen.ui.EndSessionScreen
-import com.example.testlockscreen.ui.LandingPage
-import com.example.testlockscreen.ui.MetronomeTrainingScreen
-import com.example.testlockscreen.ui.ModeSelectionScreen
-import com.example.testlockscreen.ui.VisualCueTrainingScreen
-import com.example.testlockscreen.viewmodel.MainViewModel
+import com.example.testlockscreen.presentation.ui.*
+import com.example.testlockscreen.presentation.viewmodel.MetronomeViewModel
 
 @Composable
 fun WearAppNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    mainViewModel: MainViewModel = viewModel()
+    metronomeViewModel: MetronomeViewModel = viewModel()
 ) {
     SwipeDismissableNavHost(
         navController = navController,
@@ -26,25 +21,43 @@ fun WearAppNavHost(
         modifier = modifier
     ) {
         composable(Screen.Landing.route) {
-            LandingPage(
-                onStartClick = { navController.navigate(Screen.ModeSelection.route) },
-                onSettingsClick = { navController.navigate(Screen.Settings.route) }
+            LandingScreen(
+                onStartSession = { navController.navigate(Screen.StartSession.route) },
+                onShowSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
-        composable(Screen.ModeSelection.route) {
-            ModeSelectionScreen(navController = navController)
-        }
-        composable(Screen.MetronomeTraining.route) {
-            MetronomeTrainingScreen(navController = navController, mainViewModel = mainViewModel)
-        }
-        composable(Screen.VisualCueTraining.route) {
-            VisualCueTrainingScreen(navController = navController, mainViewModel = mainViewModel)
-        }
-        composable(Screen.EndSession.route) {
-            EndSessionScreen(navController = navController, mainViewModel = mainViewModel)
-        }
         composable(Screen.Settings.route) {
-            BasicSettingsScreen(onDone = { navController.popBackStack() })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                initialBpm = metronomeViewModel.bpm.value,
+                onBpmChange = { newBpm -> metronomeViewModel.setBpm(newBpm) }
+            )
+        }
+        composable(Screen.StartSession.route) {
+            StartSessionScreen(
+                onVisualSession = { navController.navigate(Screen.VisualSession.route) },
+                onAudioSession = { navController.navigate(Screen.AudioSession.route) },
+                onVibrationSession = { navController.navigate(Screen.VibrationSession.route) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.VisualSession.route) {
+            VisualSessionScreen(
+                viewModel = metronomeViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.AudioSession.route) {
+            AudioSessionScreen(
+                viewModel = metronomeViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.VibrationSession.route) {
+            VibrationSessionScreen(
+                viewModel = metronomeViewModel,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
