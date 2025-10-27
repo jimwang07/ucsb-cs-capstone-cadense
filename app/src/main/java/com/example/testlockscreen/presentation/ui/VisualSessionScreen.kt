@@ -14,6 +14,9 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +37,16 @@ fun VisualSessionScreen(
     val stopwatch by viewModel.stopwatch.collectAsState()
     val bpm by viewModel.bpm.collectAsState()
 
-    val backgroundColor = if (isRunning && beatCount % 2 == 0) Color.Blue else Color.Green
+    var pausedColor by remember { mutableStateOf<Color?>(null) }
+
+    val backgroundColor = when {
+        isRunning -> {
+            pausedColor = null
+            if (beatCount % 2 == 0) Color.Blue else Color.Green
+        }
+        pausedColor != null -> pausedColor!!
+        else -> Color.Green
+    }
 
     Box(
         modifier = Modifier
@@ -50,14 +62,25 @@ fun VisualSessionScreen(
                 text = viewModel.formatStopwatch(stopwatch)
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { viewModel.toggle() }, shape = RoundedCornerShape(12.dp)) {
+                Button(
+                    onClick = {
+                        if (isRunning) {
+                            pausedColor = if (beatCount % 2 == 0) Color.Blue else Color.Green
+                        }
+                        viewModel.toggle()
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
                     Icon(
                         imageVector = if (isRunning) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (isRunning) "Pause" else "Play"
                     )
                 }
                 Button(
-                    onClick = { viewModel.stop() },
+                    onClick = { 
+                        viewModel.stop()
+                        pausedColor = null
+                    },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red)
                 ) {
