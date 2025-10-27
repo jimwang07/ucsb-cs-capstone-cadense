@@ -39,7 +39,7 @@ fun AudioSessionScreen(
     val audioMetronome = remember { AudioMetronome() }
 
     LaunchedEffect(beatCount) {
-        if (isRunning) {
+        if (isRunning && beatCount > 0) {
             audioMetronome.playBeep()
         }
     }

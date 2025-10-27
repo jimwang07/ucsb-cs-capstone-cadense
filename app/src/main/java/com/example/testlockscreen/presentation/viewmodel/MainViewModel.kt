@@ -1,4 +1,4 @@
-package com.example.testlockscreen.viewmodel
+package com.example.testlockscreen.presentation.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
