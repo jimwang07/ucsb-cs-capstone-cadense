@@ -15,7 +15,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,32 +32,21 @@ fun AudioSessionScreen(
     onBack: () -> Unit
 ) {
     val isRunning by viewModel.isRunning.collectAsState()
+    val beatCount by viewModel.beatCount.collectAsState()
     val stopwatch by viewModel.stopwatch.collectAsState()
     val bpm by viewModel.bpm.collectAsState()
 
     val audioMetronome = remember { AudioMetronome() }
-    val scope = rememberCoroutineScope()
 
-    // Corrected Effect 1: Handles starting and stopping the metronome.
-    LaunchedEffect(isRunning) {
-        if (isRunning) {
-            audioMetronome.start(scope, bpm)
-        } else {
-            audioMetronome.stop()
+    LaunchedEffect(beatCount) {
+        if (isRunning && beatCount > 0) {
+            audioMetronome.playBeep()
         }
     }
 
-    // Corrected Effect 2: Smoothly updates the BPM only when the metronome is already running.
-    LaunchedEffect(bpm) {
-        if (isRunning) {
-            audioMetronome.updateBpm(bpm)
-        }
-    }
-
-    // Effect for cleaning up when the screen is closed.
     DisposableEffect(Unit) {
         onDispose {
-            audioMetronome.stop()
+            audioMetronome.release()
         }
     }
 
