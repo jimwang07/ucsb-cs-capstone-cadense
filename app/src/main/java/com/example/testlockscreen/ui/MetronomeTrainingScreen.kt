@@ -54,12 +54,6 @@ fun MetronomeTrainingScreen(
     val hapticsController = HapticsController(LocalContext.current)
     val coroutineScope = rememberCoroutineScope()
 
-    DisposableEffect(Unit) {
-        onDispose {
-            hapticsController.cancelHaptics()
-        }
-    }
-
     val focusRequester = remember { FocusRequester() }
     val lazyListState = rememberLazyListState()
 
