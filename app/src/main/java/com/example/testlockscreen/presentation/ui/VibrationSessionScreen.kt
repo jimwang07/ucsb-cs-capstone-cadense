@@ -1,4 +1,3 @@
-
 package com.example.testlockscreen.presentation.ui
 
 import androidx.compose.foundation.layout.Arrangement
@@ -12,10 +11,10 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,19 +33,21 @@ fun VibrationSessionScreen(
     onBack: () -> Unit
 ) {
     val isRunning by viewModel.isRunning.collectAsState()
+    val beatCount by viewModel.beatCount.collectAsState()
     val stopwatch by viewModel.stopwatch.collectAsState()
     val bpm by viewModel.bpm.collectAsState()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val hapticsController = remember { HapticsController(context) }
 
-    DisposableEffect(Unit) {
-        hapticsController.startObserving(scope, viewModel.isRunning, viewModel.bpm)
+    LaunchedEffect(beatCount) {
+        if (isRunning && beatCount > 0) {
+            hapticsController.vibrate(30)
+        }
+    }
 
+    DisposableEffect(Unit) {
         onDispose {
-            // This space is intentionally left blank.
-            // The observation is cancelled automatically when the scope is cancelled
-            // when the composable is disposed.
+            hapticsController.cancel()
         }
     }
 
