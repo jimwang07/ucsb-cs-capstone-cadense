@@ -9,5 +9,8 @@ sealed class Screen(val route: String) {
     object VibrationSession : Screen("vibration_session")
     object MetronomeTraining : Screen("metronome_training")
     object VisualCueTraining : Screen("visual_cue_training")
-    object EndSession : Screen("end_session")
+
+    object EndSession : Screen("end_session/{sessionLength}/{beatCount}") {
+        fun createRoute(sessionLength: Long, beatCount: Int) = "end_session/$sessionLength/$beatCount"
+    }
 }

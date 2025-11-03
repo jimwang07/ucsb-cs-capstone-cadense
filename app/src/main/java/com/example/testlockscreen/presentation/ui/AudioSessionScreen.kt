@@ -29,7 +29,8 @@ import com.example.testlockscreen.presentation.viewmodel.MetronomeViewModel
 @Composable
 fun AudioSessionScreen(
     viewModel: MetronomeViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEnd: (Long, Int) -> Unit
 ) {
     val isRunning by viewModel.isRunning.collectAsState()
     val beatCount by viewModel.beatCount.collectAsState()
@@ -89,8 +90,16 @@ fun AudioSessionScreen(
                 }
             }
         }
-        Button(onClick = onBack, shape = RoundedCornerShape(12.dp)) {
-            Text(text = "Back")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)){
+            Button(onClick = onBack, shape = RoundedCornerShape(12.dp)) {
+                Text(text = "Back")
+            }
+            Button(onClick = {
+                viewModel.stop()
+                onEnd(stopwatch, beatCount)
+            }, shape = RoundedCornerShape(12.dp)) {
+                Text(text = "End")
+            }
         }
     }
 }

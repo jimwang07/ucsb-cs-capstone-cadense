@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import com.example.testlockscreen.presentation.ui.*
@@ -44,19 +46,43 @@ fun WearAppNavHost(
         composable(Screen.VisualSession.route) {
             VisualSessionScreen(
                 viewModel = metronomeViewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onEnd = { sessionLength, beatCount ->
+                    navController.navigate(Screen.EndSession.createRoute(sessionLength, beatCount))
+                }
             )
         }
         composable(Screen.AudioSession.route) {
             AudioSessionScreen(
                 viewModel = metronomeViewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onEnd = { sessionLength, beatCount ->
+                    navController.navigate(Screen.EndSession.createRoute(sessionLength, beatCount))
+                }
             )
         }
         composable(Screen.VibrationSession.route) {
             VibrationSessionScreen(
                 viewModel = metronomeViewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onEnd = { sessionLength, beatCount ->
+                    navController.navigate(Screen.EndSession.createRoute(sessionLength, beatCount))
+                }
+            )
+        }
+        composable(
+            route = Screen.EndSession.route,
+            arguments = listOf(
+                navArgument("sessionLength") { type = NavType.LongType },
+                navArgument("beatCount") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val sessionLength = backStackEntry.arguments?.getLong("sessionLength") ?: 0L
+            val beatCount = backStackEntry.arguments?.getInt("beatCount") ?: 0
+            AnalyticsScreen(
+                sessionLength = sessionLength,
+                beatCount = beatCount,
+                onBack = { navController.popBackStack(Screen.Landing.route, false) }
             )
         }
     }

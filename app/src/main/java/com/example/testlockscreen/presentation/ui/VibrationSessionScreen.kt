@@ -1,4 +1,3 @@
-
 package com.example.testlockscreen.presentation.ui
 
 import androidx.compose.foundation.layout.Arrangement
@@ -31,9 +30,11 @@ import com.example.testlockscreen.presentation.viewmodel.MetronomeViewModel
 @Composable
 fun VibrationSessionScreen(
     viewModel: MetronomeViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEnd: (Long, Int) -> Unit
 ) {
     val isRunning by viewModel.isRunning.collectAsState()
+    val beatCount by viewModel.beatCount.collectAsState()
     val stopwatch by viewModel.stopwatch.collectAsState()
     val bpm by viewModel.bpm.collectAsState()
     val context = LocalContext.current
@@ -89,8 +90,16 @@ fun VibrationSessionScreen(
                 }
             }
         }
-        Button(onClick = onBack, shape = RoundedCornerShape(12.dp)) {
-            Text(text = "Back")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)){
+            Button(onClick = onBack, shape = RoundedCornerShape(12.dp)) {
+                Text(text = "Back")
+            }
+            Button(onClick = {
+                viewModel.stop()
+                onEnd(stopwatch, beatCount)
+            }, shape = RoundedCornerShape(12.dp)) {
+                Text(text = "End")
+            }
         }
     }
 }
