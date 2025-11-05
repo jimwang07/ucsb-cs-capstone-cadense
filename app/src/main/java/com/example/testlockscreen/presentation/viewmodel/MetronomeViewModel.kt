@@ -6,6 +6,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MetronomeViewModel : ViewModel() {
@@ -26,12 +27,15 @@ class MetronomeViewModel : ViewModel() {
     private var stopwatchJob: Job? = null
 
     private var timeUntilNextBeat = 0L
+    private var lastBeatTime = 0L // Time of the last beat
 
     private var stopwatchStartTime = 0L
     private var pausedStopwatchTime = 0L
 
     fun setBpm(newBpm: Int) {
-        _bpm.value = newBpm
+        if (newBpm > 0) {
+            _bpm.value = newBpm
+        }
     }
 
     fun toggle() {
@@ -45,18 +49,31 @@ class MetronomeViewModel : ViewModel() {
     private fun start() {
         _isRunning.value = true
         stopwatchStartTime = System.currentTimeMillis()
-        metronomeJob = viewModelScope.launch {
-            val delayMillis = 60000L / _bpm.value
-            var remainingDelay = if (timeUntilNextBeat > 0) timeUntilNextBeat else delayMillis
+        if (lastBeatTime == 0L) { // If it's the very first start
+            lastBeatTime = System.currentTimeMillis()
+        }
 
+        metronomeJob = viewModelScope.launch {
             if (_beatCount.value == 0) {
                 _beatCount.value++
             }
+            while (isActive) {
+                val delayMillis = 60000L / _bpm.value
 
-            while (_isRunning.value) {
-                delay(remainingDelay)
+                val delayToUse = if (timeUntilNextBeat > 0) {
+                    val remaining = timeUntilNextBeat
+                    timeUntilNextBeat = 0L // Consume it
+                    remaining
+                } else {
+                    delayMillis
+                }
+
+                delay(delayToUse)
+
+                if (!isRunning.value) break // Check again after delay
+
                 _beatCount.value++
-                remainingDelay = delayMillis
+                lastBeatTime = System.currentTimeMillis()
             }
         }
 
@@ -64,7 +81,7 @@ class MetronomeViewModel : ViewModel() {
             while (_isRunning.value) {
                 val elapsedTime = pausedStopwatchTime + (System.currentTimeMillis() - stopwatchStartTime)
                 _stopwatch.value = elapsedTime / 1000
-                delay(100)
+                delay(100) // Update UI frequently
             }
         }
     }
@@ -74,11 +91,17 @@ class MetronomeViewModel : ViewModel() {
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
 
+        // Update stopwatch time
         pausedStopwatchTime += System.currentTimeMillis() - stopwatchStartTime
 
+        // Calculate time remaining for the next beat
         val delayMillis = 60000L / _bpm.value
-        val elapsedTime = pausedStopwatchTime % delayMillis
-        timeUntilNextBeat = delayMillis - elapsedTime
+        val elapsedSinceLastBeat = System.currentTimeMillis() - lastBeatTime
+        timeUntilNextBeat = if (elapsedSinceLastBeat < delayMillis) {
+            delayMillis - elapsedSinceLastBeat
+        } else {
+            0L // If we paused after a beat was due, just start a new beat on resume
+        }
     }
 
     fun stop() {
@@ -86,6 +109,7 @@ class MetronomeViewModel : ViewModel() {
         _beatCount.value = 0
         _stopwatch.value = 0
         timeUntilNextBeat = 0L
+        lastBeatTime = 0L
         pausedStopwatchTime = 0L
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
