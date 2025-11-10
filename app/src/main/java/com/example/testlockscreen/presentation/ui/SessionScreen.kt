@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
@@ -26,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
+import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.example.testlockscreen.audio.AudioMetronome
 import com.example.testlockscreen.haptics.HapticsController
@@ -91,11 +95,7 @@ fun SessionScreen(
         ) {
             Text(text = metronomeViewModel.formatStopwatch(stopwatch))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { metronomeViewModel.toggle() },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Green)
-                ) {
+                Button(onClick = { metronomeViewModel.toggle() }, shape = RoundedCornerShape(12.dp)) {
                     Icon(
                         imageVector = if (isRunning) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (isRunning) "Pause" else "Play"
@@ -110,9 +110,24 @@ fun SessionScreen(
                 }
             }
             Text(text = "BPM: $bpm")
-            Button(onClick = onBack, shape = RoundedCornerShape(12.dp)) {
-                Text(text = "Back")
-            }
+        }
+
+        // Custom-built Icon Button as a workaround
+        Button(
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 4.dp),
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = Color.Transparent,
+                contentColor = MaterialTheme.colors.primary
+            )
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back"
+            )
         }
     }
 }
