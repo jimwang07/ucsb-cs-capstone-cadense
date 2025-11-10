@@ -30,8 +30,15 @@ class SensorManagerWrapper(private val context: Context) {
                     val x = event.values[0]
                     val y = event.values[1]
                     val z = event.values[2]
-                    val magnitude = Math.sqrt((x*x + y*y + z*z).toDouble()).toFloat()
-                    trySend(SensorSample(timestamp = timestamp, type = "ACCELEROMETER", value1 = magnitude, value2 = x, value3 = y))
+                    trySend(
+                        SensorSample(
+                            timestamp = timestamp,
+                            type = "ACCELEROMETER",
+                            value1 = x,
+                            value2 = y,
+                            value3 = z
+                        )
+                    )
                 }
             }
 

@@ -23,7 +23,8 @@ import androidx.wear.compose.material.Text
 @Composable
 fun LandingScreen(
     onStartSession: () -> Unit,
-    onShowSettings: () -> Unit
+    onShowSettings: () -> Unit,
+    onShowImuGraph: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -44,6 +45,18 @@ fun LandingScreen(
                 )
             ) {
                 Text(text = "Start Session", fontSize = 12.sp)
+            }
+            Button(
+                onClick = onShowImuGraph,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .size(150.dp, 50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Color(0xFF0057E7)
+                )
+            ) {
+                Text(text = "IMU Graph", fontSize = 12.sp)
             }
         }
         Button(

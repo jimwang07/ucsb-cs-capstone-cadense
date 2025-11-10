@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import com.example.testlockscreen.presentation.ui.*
+import com.example.testlockscreen.presentation.viewmodel.ImuGraphViewModel
 import com.example.testlockscreen.presentation.viewmodel.MetronomeViewModel
 
 @Composable
@@ -25,7 +26,8 @@ fun WearAppNavHost(
         composable(Screen.Landing.route) {
             LandingScreen(
                 onStartSession = { navController.navigate(Screen.StartSession.route) },
-                onShowSettings = { navController.navigate(Screen.Settings.route) }
+                onShowSettings = { navController.navigate(Screen.Settings.route) },
+                onShowImuGraph = { navController.navigate(Screen.ImuGraph.route) }
             )
         }
         composable(Screen.Settings.route) {
@@ -68,6 +70,13 @@ fun WearAppNavHost(
                 onEnd = { sessionLength, beatCount ->
                     navController.navigate(Screen.EndSession.createRoute(sessionLength, beatCount))
                 }
+            )
+        }
+        composable(Screen.ImuGraph.route) {
+            val imuGraphViewModel: ImuGraphViewModel = viewModel()
+            ImuGraphScreen(
+                viewModel = imuGraphViewModel,
+                onBack = { navController.popBackStack() }
             )
         }
         composable(

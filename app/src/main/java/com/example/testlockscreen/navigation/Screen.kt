@@ -7,6 +7,7 @@ sealed class Screen(val route: String) {
     object VisualSession : Screen("visual_session")
     object AudioSession : Screen("audio_session")
     object VibrationSession : Screen("vibration_session")
+    object ImuGraph : Screen("imu_graph")
     object MetronomeTraining : Screen("metronome_training")
     object VisualCueTraining : Screen("visual_cue_training")
 
