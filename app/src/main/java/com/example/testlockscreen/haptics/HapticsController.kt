@@ -10,8 +10,8 @@ class HapticsController(context: Context) {
     private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
     fun vibrate(milliseconds: Long) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.EFFECT_HEAVY_CLICK))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
         } else {
             @Suppress("DEPRECATION")
             vibrator.vibrate(milliseconds)
