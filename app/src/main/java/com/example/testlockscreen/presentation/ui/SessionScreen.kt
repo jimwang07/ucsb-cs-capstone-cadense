@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,7 @@ import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
 import com.example.testlockscreen.audio.AudioMetronome
 import com.example.testlockscreen.haptics.HapticsController
+import com.example.testlockscreen.presentation.theme.EmeraldDark
 import com.example.testlockscreen.presentation.viewmodel.MetronomeViewModel
 import com.example.testlockscreen.presentation.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
@@ -277,23 +280,39 @@ private fun DetailsView(
     onEndSession: () -> Unit,
     onBack: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
 
-        // Back button
-        Button(
-            onClick = onBack,
+    val backButtonIconSize = screenHeight * 0.12f
+    val backButtonTouchTarget = screenHeight * 0.15f
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(all = screenHeight * 0.02f)
+    ) {
+
+        val backInteractionSource = remember { MutableInteractionSource() }
+        val isBackPressed by backInteractionSource.collectIsPressedAsState()
+        val backButtonColor by animateColorAsState(
+            targetValue = if (isBackPressed) EmeraldDark else ColorEmeraldGreen,
+            animationSpec = tween(durationMillis = 200),
+            label = "BackButtonColor"
+        )
+
+        Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 6.dp)
-                .size(32.dp),
-            shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent)
+                .size(backButtonTouchTarget)
+                .clip(CircleShape)
+                .clickable(interactionSource = backInteractionSource, indication = null, onClick = onBack),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Filled.ChevronLeft,
+                imageVector = Icons.Default.ChevronLeft,
                 contentDescription = "Back",
-                tint = ColorEmeraldGreen,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(backButtonIconSize),
+                tint = backButtonColor
             )
         }
 
