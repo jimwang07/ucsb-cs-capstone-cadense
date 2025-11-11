@@ -55,6 +55,10 @@ fun WearAppNavHost(
             SessionScreen(
                 metronomeViewModel = metronomeViewModel,
                 settingsViewModel = settingsViewModel,
+                onEndSession = { time, distance, poleStrikes ->
+                    // TODO: Implement navigation to a Session Summary screen
+                    navController.popBackStack()
+                },
                 onBack = { navController.popBackStack() }
             )
         }
