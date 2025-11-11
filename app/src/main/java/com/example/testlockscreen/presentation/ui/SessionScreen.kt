@@ -78,6 +78,7 @@ fun SessionScreen(
     val isRunning by metronomeViewModel.isRunning.collectAsState()
     val beatCount by metronomeViewModel.beatCount.collectAsState()
     val stopwatch by metronomeViewModel.stopwatch.collectAsState()
+    val distance by metronomeViewModel.distance.collectAsState()
 
     val isVisualEnabled by settingsViewModel.isVisualEnabled.collectAsState()
     val isAudioEnabled by settingsViewModel.isAudioEnabled.collectAsState()
@@ -101,7 +102,6 @@ fun SessionScreen(
     // If visual is enabled → start in visual mode (no controls)
     // If visual is disabled → start in details mode (controls visible)
     var showControls by remember(isVisualEnabled) { mutableStateOf(!isVisualEnabled) }
-    var distance by remember { mutableStateOf(0.0f) }      // Simulated meters
     var poleStrikes by remember { mutableIntStateOf(0) }   // Simulated strikes
 
     // When we resume (isRunning becomes true) and visual mode is enabled,
@@ -125,17 +125,7 @@ fun SessionScreen(
             audioMetronome.release()
         }
     }
-
-    // --- Distance Timer (simulated walking speed) ---
-    LaunchedEffect(isRunning) {
-        if (!isRunning) return@LaunchedEffect
-
-        while (isActive) {
-            delay(1000L)
-            distance += 1.2f // ~1.2 m/s walking speed
-        }
-    }
-
+    
     // --- Feedback and Pole Strike Logic (per beat) ---
     LaunchedEffect(beatCount) {
         if (!isRunning || beatCount <= 0) return@LaunchedEffect
@@ -274,7 +264,7 @@ private fun MetronomeCircle(index: Int, currentBeat: Int) {
 @Composable
 private fun DetailsView(
     time: Int,
-    distance: Float,
+    distance: Double,
     poleStrikes: Int,
     isPaused: Boolean,
     onPauseToggle: () -> Unit,
@@ -343,7 +333,7 @@ private fun DetailsView(
 
             // --- Distance / Strikes ---
             Row(
-                horizontalArrangement = Arrangement.spacedBy(36.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

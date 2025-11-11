@@ -1,15 +1,25 @@
 package com.example.testlockscreen.presentation.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.location.Location
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.testlockscreen.data.location.LocationRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class MetronomeViewModel : ViewModel() {
+class MetronomeViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val locationRepository = LocationRepository(application)
+    private var locationJob: Job? = null
 
     private val _isRunning = MutableStateFlow(false)
     val isRunning = _isRunning.asStateFlow()
@@ -23,6 +33,12 @@ class MetronomeViewModel : ViewModel() {
     private val _stopwatch = MutableStateFlow(0L)
     val stopwatch = _stopwatch.asStateFlow()
 
+    private val _location = MutableStateFlow<Location?>(null)
+    val location = _location.asStateFlow()
+
+    private val _distance = MutableStateFlow(0.0)
+    val distance = _distance.asStateFlow()
+
     private var metronomeJob: Job? = null
     private var stopwatchJob: Job? = null
 
@@ -31,6 +47,32 @@ class MetronomeViewModel : ViewModel() {
 
     private var stopwatchStartTime = 0L
     private var pausedStopwatchTime = 0L
+
+    private var lastLocation: Location? = null
+
+    fun onLocationPermissionGranted() {
+        Log.d("MetronomeViewModel", "onLocationPermissionGranted called")
+    }
+
+    private fun startLocationUpdates() {
+        Log.d("MetronomeViewModel", "Starting location updates...")
+        locationJob = locationRepository.getLocationUpdates()
+            .catch { e -> Log.e("MetronomeViewModel", "Error getting location", e) }
+            .onEach { location ->
+                Log.d("MetronomeViewModel", "New location: $location")
+                _location.value = location
+                lastLocation?.let {
+                    _distance.value += location.distanceTo(it)
+                }
+                lastLocation = location
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun stopLocationUpdates() {
+        Log.d("MetronomeViewModel", "Stopping location updates")
+        locationJob?.cancel()
+    }
 
     fun setBpm(newBpm: Int) {
         if (newBpm > 0) {
@@ -48,6 +90,7 @@ class MetronomeViewModel : ViewModel() {
 
     private fun start() {
         _isRunning.value = true
+        startLocationUpdates()
         stopwatchStartTime = System.currentTimeMillis()
         if (lastBeatTime == 0L) { // If it's the very first start
             lastBeatTime = System.currentTimeMillis()
@@ -88,6 +131,7 @@ class MetronomeViewModel : ViewModel() {
 
     private fun pause() {
         _isRunning.value = false
+        stopLocationUpdates()
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
 
@@ -106,8 +150,11 @@ class MetronomeViewModel : ViewModel() {
 
     fun stop() {
         _isRunning.value = false
+        stopLocationUpdates()
         _beatCount.value = 0
         _stopwatch.value = 0
+        _distance.value = 0.0
+        lastLocation = null
         timeUntilNextBeat = 0L
         lastBeatTime = 0L
         pausedStopwatchTime = 0L
