@@ -191,7 +191,7 @@ private fun VisualModeView(time: Int, beatCount: Int) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 4.dp), // small side padding
+            .padding(horizontal = 2.dp), // small side padding
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Top spacer to keep content away from very top edge
@@ -250,7 +250,7 @@ private fun MetronomeCircle(index: Int, currentBeat: Int) {
 
     Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(32.dp)
             .shadow(
                 elevation = if (isFilled) 15.dp else 0.dp,
                 shape = CircleShape,
