@@ -4,18 +4,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
-import com.example.testlockscreen.presentation.ui.*
+import com.example.testlockscreen.presentation.ui.AdjustMetronomeScreen
+import com.example.testlockscreen.presentation.ui.AdjustModesScreen
+import com.example.testlockscreen.presentation.ui.LandingScreen
+import com.example.testlockscreen.presentation.ui.SessionScreen
+import com.example.testlockscreen.presentation.ui.SettingsScreen
 import com.example.testlockscreen.presentation.viewmodel.MetronomeViewModel
+import com.example.testlockscreen.presentation.viewmodel.SettingsViewModel
 
 @Composable
 fun WearAppNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    metronomeViewModel: MetronomeViewModel = viewModel()
+    metronomeViewModel: MetronomeViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel = viewModel()
 ) {
     SwipeDismissableNavHost(
         navController = navController,
@@ -24,65 +28,34 @@ fun WearAppNavHost(
     ) {
         composable(Screen.Landing.route) {
             LandingScreen(
-                onStartSession = { navController.navigate(Screen.StartSession.route) },
+                onStartSession = { navController.navigate(Screen.Session.route) },
                 onShowSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
         composable(Screen.Settings.route) {
             SettingsScreen(
-                onBack = { navController.popBackStack() },
-                initialBpm = metronomeViewModel.bpm.value,
-                onBpmChange = { newBpm -> metronomeViewModel.setBpm(newBpm) }
-            )
-        }
-        composable(Screen.StartSession.route) {
-            StartSessionScreen(
-                onVisualSession = { navController.navigate(Screen.VisualSession.route) },
-                onAudioSession = { navController.navigate(Screen.AudioSession.route) },
-                onVibrationSession = { navController.navigate(Screen.VibrationSession.route) },
+                onAdjustMetronome = { navController.navigate(Screen.AdjustMetronome.route) },
+                onAdjustModes = { navController.navigate(Screen.AdjustModes.route) },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(Screen.VisualSession.route) {
-            VisualSessionScreen(
-                viewModel = metronomeViewModel,
-                onBack = { navController.popBackStack() },
-                onEnd = { sessionLength, beatCount ->
-                    navController.navigate(Screen.EndSession.createRoute(sessionLength, beatCount))
-                }
+        composable(Screen.AdjustMetronome.route) {
+            AdjustMetronomeScreen(
+                viewModel = settingsViewModel,
+                onBack = { navController.popBackStack() }
             )
         }
-        composable(Screen.AudioSession.route) {
-            AudioSessionScreen(
-                viewModel = metronomeViewModel,
-                onBack = { navController.popBackStack() },
-                onEnd = { sessionLength, beatCount ->
-                    navController.navigate(Screen.EndSession.createRoute(sessionLength, beatCount))
-                }
+        composable(Screen.AdjustModes.route) {
+            AdjustModesScreen(
+                viewModel = settingsViewModel,
+                onBack = { navController.popBackStack() }
             )
         }
-        composable(Screen.VibrationSession.route) {
-            VibrationSessionScreen(
-                viewModel = metronomeViewModel,
-                onBack = { navController.popBackStack() },
-                onEnd = { sessionLength, beatCount ->
-                    navController.navigate(Screen.EndSession.createRoute(sessionLength, beatCount))
-                }
-            )
-        }
-        composable(
-            route = Screen.EndSession.route,
-            arguments = listOf(
-                navArgument("sessionLength") { type = NavType.LongType },
-                navArgument("beatCount") { type = NavType.IntType }
-            )
-        ) { backStackEntry ->
-            val sessionLength = backStackEntry.arguments?.getLong("sessionLength") ?: 0L
-            val beatCount = backStackEntry.arguments?.getInt("beatCount") ?: 0
-            AnalyticsScreen(
-                sessionLength = sessionLength,
-                beatCount = beatCount,
-                onBack = { navController.popBackStack(Screen.Landing.route, false) }
+        composable(Screen.Session.route) {
+            SessionScreen(
+                metronomeViewModel = metronomeViewModel,
+                settingsViewModel = settingsViewModel,
+                onBack = { navController.popBackStack() }
             )
         }
     }

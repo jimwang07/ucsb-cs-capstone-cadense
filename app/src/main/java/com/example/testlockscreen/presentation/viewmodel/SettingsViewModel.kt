@@ -3,7 +3,6 @@ package com.example.testlockscreen.presentation.viewmodel
 import android.app.Application
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
@@ -21,41 +20,62 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private object PreferenceKeys {
         val BPM_KEY = intPreferencesKey("default_bpm")
-        val INTERVAL_KEY = floatPreferencesKey("default_interval")
-        val HAPTICS_KEY = booleanPreferencesKey("haptics_enabled")
-        val TEXT_SCALE_KEY = floatPreferencesKey("text_scale")
+        val VISUAL_ENABLED_KEY = booleanPreferencesKey("visual_enabled")
+        val AUDIO_ENABLED_KEY = booleanPreferencesKey("audio_enabled")
+        val VIBRATION_ENABLED_KEY = booleanPreferencesKey("vibration_enabled")
     }
 
     private val _defaultBpm = MutableStateFlow(60)
     val defaultBpm: StateFlow<Int> = _defaultBpm
 
-    private val _defaultVisualCueInterval = MutableStateFlow(1.0f)
-    val defaultVisualCueInterval: StateFlow<Float> = _defaultVisualCueInterval
+    private val _isVisualEnabled = MutableStateFlow(true)
+    val isVisualEnabled: StateFlow<Boolean> = _isVisualEnabled
 
-    private val _hapticsEnabled = MutableStateFlow(true)
-    val hapticsEnabled: StateFlow<Boolean> = _hapticsEnabled
+    private val _isAudioEnabled = MutableStateFlow(true)
+    val isAudioEnabled: StateFlow<Boolean> = _isAudioEnabled
 
-    private val _textScale = MutableStateFlow(1.0f)
-    val textScale: StateFlow<Float> = _textScale
+    private val _isVibrationEnabled = MutableStateFlow(false) // Default to off
+    val isVibrationEnabled: StateFlow<Boolean> = _isVibrationEnabled
 
     init {
         viewModelScope.launch {
-            dataStore.data.map { preferences ->
-                _defaultBpm.value = preferences[PreferenceKeys.BPM_KEY] ?: 60
-                _defaultVisualCueInterval.value = preferences[PreferenceKeys.INTERVAL_KEY] ?: 1.0f
-                _hapticsEnabled.value = preferences[PreferenceKeys.HAPTICS_KEY] ?: true
-                _textScale.value = preferences[PreferenceKeys.TEXT_SCALE_KEY] ?: 1.0f
+            dataStore.data.map {
+                _defaultBpm.value = it[PreferenceKeys.BPM_KEY] ?: 60
+                _isVisualEnabled.value = it[PreferenceKeys.VISUAL_ENABLED_KEY] ?: true
+                _isAudioEnabled.value = it[PreferenceKeys.AUDIO_ENABLED_KEY] ?: true
+                _isVibrationEnabled.value = it[PreferenceKeys.VIBRATION_ENABLED_KEY] ?: false
             }.collect {}
         }
     }
 
-    fun saveSettings(bpm: Int, interval: Float, haptics: Boolean, scale: Float) {
+    fun setDefaultBpm(bpm: Int) {
         viewModelScope.launch {
-            dataStore.edit { settings ->
-                settings[PreferenceKeys.BPM_KEY] = bpm
-                settings[PreferenceKeys.INTERVAL_KEY] = interval
-                settings[PreferenceKeys.HAPTICS_KEY] = haptics
-                settings[PreferenceKeys.TEXT_SCALE_KEY] = scale
+            dataStore.edit {
+                it[PreferenceKeys.BPM_KEY] = bpm
+            }
+        }
+    }
+
+    fun setVisualEnabled(isEnabled: Boolean) {
+        viewModelScope.launch {
+            dataStore.edit {
+                it[PreferenceKeys.VISUAL_ENABLED_KEY] = isEnabled
+            }
+        }
+    }
+
+    fun setAudioEnabled(isEnabled: Boolean) {
+        viewModelScope.launch {
+            dataStore.edit {
+                it[PreferenceKeys.AUDIO_ENABLED_KEY] = isEnabled
+            }
+        }
+    }
+
+    fun setVibrationEnabled(isEnabled: Boolean) {
+        viewModelScope.launch {
+            dataStore.edit {
+                it[PreferenceKeys.VIBRATION_ENABLED_KEY] = isEnabled
             }
         }
     }

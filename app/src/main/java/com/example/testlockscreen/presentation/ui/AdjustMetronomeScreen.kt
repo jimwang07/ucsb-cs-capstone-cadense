@@ -3,14 +3,15 @@ package com.example.testlockscreen.presentation.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,49 +22,34 @@ import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.ScalingLazyColumn
 import androidx.wear.compose.material.Text
+import com.example.testlockscreen.presentation.viewmodel.SettingsViewModel
 
 @Composable
-fun SettingsScreen(
-    onAdjustMetronome: () -> Unit,
-    onAdjustModes: () -> Unit,
+fun AdjustMetronomeScreen(
+    viewModel: SettingsViewModel,
     onBack: () -> Unit
 ) {
+    val bpm by viewModel.defaultBpm.collectAsState()
+
     Box(modifier = Modifier.fillMaxSize()) {
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 32.dp, bottom = 32.dp),
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 32.dp, bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
         ) {
             item {
-                Text(text = "Settings")
-            }
-            item {
-                Button(
-                    onClick = onAdjustMetronome,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = MaterialTheme.colors.primary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(text = "Adjust Metronome")
-                }
-            }
-            item {
-                Button(
-                    onClick = onAdjustModes,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = MaterialTheme.colors.primary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                ) {
-                    Text(text = "Adjust Modes")
+                    Button(onClick = { viewModel.setDefaultBpm(bpm - 1) }) {
+                        Text(text = "-")
+                    }
+                    Text(text = "$bpm")
+                    Button(onClick = { viewModel.setDefaultBpm(bpm + 1) }) {
+                        Text(text = "+")
+                    }
                 }
             }
         }

@@ -11,9 +11,9 @@ import androidx.wear.compose.material.MaterialTheme
 val wearColorPalette = Colors(
     background = Color.Black,
     onBackground = Color.White,
-    primary = Color(0xFF4CAF50),
+    primary = Color(0xFF29EAB6),
     onPrimary = Color.Black,
-    secondary = Color(0xFF4CAF50),
+    secondary = Color(0xFF57E964),
     onSecondary = Color.Black,
     error = Color(0xFFF44336),
     onError = Color.White,
