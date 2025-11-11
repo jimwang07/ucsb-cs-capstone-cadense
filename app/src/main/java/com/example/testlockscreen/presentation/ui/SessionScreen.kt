@@ -1,133 +1,399 @@
 package com.example.testlockscreen.presentation.ui
 
-import android.util.Log
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
-import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.example.testlockscreen.audio.AudioMetronome
 import com.example.testlockscreen.haptics.HapticsController
 import com.example.testlockscreen.presentation.viewmodel.MetronomeViewModel
 import com.example.testlockscreen.presentation.viewmodel.SettingsViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.math.roundToInt
+
+// --- Color Palette ---
+private val ColorWhite = Color(0xFFFFFFFF)
+private val ColorMint = Color(0xFFA4F5DC)
+private val ColorTeal = Color(0xFF29EAB6)
+private val ColorUnfilled = Color(0xFF1F2937)
+private val ColorUnfilledBorder = Color(0xFF374151)
+private val ColorMutedGray = Color(0xFF6B7280)
+private val ColorLightGray = Color(0xFF9CA3AF)
+private val ColorButtonDarkGray = Color(0xFF374151)
+private val ColorButtonRed = Color(0xFFDC2626)
+private val ColorEmeraldGreen = Color(0xFF34D399)
 
 @Composable
 fun SessionScreen(
     metronomeViewModel: MetronomeViewModel,
     settingsViewModel: SettingsViewModel,
+    onEndSession: (time: Int, distance: Int, poleStrikes: Int) -> Unit,
     onBack: () -> Unit
 ) {
+    // --- State from ViewModels ---
     val isRunning by metronomeViewModel.isRunning.collectAsState()
     val beatCount by metronomeViewModel.beatCount.collectAsState()
     val stopwatch by metronomeViewModel.stopwatch.collectAsState()
-    val bpm by metronomeViewModel.bpm.collectAsState()
 
     val isVisualEnabled by settingsViewModel.isVisualEnabled.collectAsState()
     val isAudioEnabled by settingsViewModel.isAudioEnabled.collectAsState()
     val isVibrationEnabled by settingsViewModel.isVibrationEnabled.collectAsState()
 
+    val defaultBpm by settingsViewModel.defaultBpm.collectAsState()
+
+    // --- Connect Settings BPM to Metronome BPM ---
+    LaunchedEffect(defaultBpm) {
+        // Whenever settings BPM changes, update metronome BPM
+        metronomeViewModel.setBpm(defaultBpm)
+    }
+
+    LaunchedEffect(Unit) {
+        if (!metronomeViewModel.isRunning.value) {
+            metronomeViewModel.toggle()   // calls start() internally
+        }
+    }
+
+    // --- Local UI and Dummy State ---
+    // If visual is enabled → start in visual mode (no controls)
+    // If visual is disabled → start in details mode (controls visible)
+    var showControls by remember(isVisualEnabled) { mutableStateOf(!isVisualEnabled) }
+    var distance by remember { mutableStateOf(0.0f) }      // Simulated meters
+    var poleStrikes by remember { mutableIntStateOf(0) }   // Simulated strikes
+
+    // When we resume (isRunning becomes true) and visual mode is enabled,
+    // automatically return to the 4-circle visual view.
+    LaunchedEffect(isRunning, isVisualEnabled) {
+        if (isRunning && isVisualEnabled) {
+            showControls = false
+        }
+    }
+
+    // --- Feedback Controllers ---
     val context = LocalContext.current
     val hapticsController = remember { HapticsController(context) }
     val audioMetronome = remember { AudioMetronome() }
 
-    val backgroundColor = if (isRunning && isVisualEnabled && beatCount % 2 == 0) {
-        Color.Blue
-    } else {
-        Color.Black
-    }
-
-    // Haptics
-    LaunchedEffect(beatCount) {
-        if (isRunning && isVibrationEnabled && beatCount > 0) {
-            Log.d("SessionScreen", "Vibrating...")
-            hapticsController.vibrate(30)
-        }
-    }
-
-    // Audio
-    LaunchedEffect(beatCount) {
-        if (isRunning && isAudioEnabled && beatCount > 0) {
-            audioMetronome.playBeep()
-        }
-    }
-
+    // --- Lifecycle Management ---
     DisposableEffect(Unit) {
         onDispose {
+            metronomeViewModel.stop()
             hapticsController.cancel()
             audioMetronome.release()
         }
     }
 
+    // --- Distance Timer (simulated walking speed) ---
+    LaunchedEffect(isRunning) {
+        if (!isRunning) return@LaunchedEffect
+
+        while (isActive) {
+            delay(1000L)
+            distance += 1.2f // ~1.2 m/s walking speed
+        }
+    }
+
+    // --- Feedback and Pole Strike Logic (per beat) ---
+    LaunchedEffect(beatCount) {
+        if (!isRunning || beatCount <= 0) return@LaunchedEffect
+
+        poleStrikes++
+
+        if (isVibrationEnabled) {
+            hapticsController.vibrate(30)
+        }
+        if (isAudioEnabled) {
+            audioMetronome.playBeep()
+        }
+    }
+
+    // --- UI: Visual vs Details ---
+    val isTappable = isVisualEnabled
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundColor)
+            .background(Color.Black)
+            .clickable(
+                enabled = isTappable,
+                onClick = { showControls = !showControls },
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceAround,
-            horizontalAlignment = Alignment.CenterHorizontally
+        if (isVisualEnabled && !showControls) {
+            // Visual circles view (Time + 4 circles + "Tap to show details")
+            VisualModeView(
+                time = stopwatch.toInt(),
+                beatCount = beatCount
+            )
+        } else {
+            // Details view: Time, Distance, Strikes, controls
+            DetailsView(
+                time = stopwatch.toInt(),
+                distance = distance,
+                poleStrikes = poleStrikes,
+                isPaused = !isRunning,
+                onPauseToggle = { metronomeViewModel.toggle() },
+                onEndSession = {
+                    onEndSession(stopwatch.toInt(), distance.roundToInt(), poleStrikes)
+                },
+                onBack = onBack
+            )
+        }
+    }
+}
+
+// --- VISUAL MODE VIEW ---
+@Composable
+private fun VisualModeView(time: Int, beatCount: Int) {
+    val currentBeat = if (beatCount > 0) (beatCount - 1) % 4 else -1
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 4.dp), // small side padding
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Top spacer to keep content away from very top edge
+        Spacer(modifier = Modifier.weight(1f))
+
+        // --- Time at top of the block ---
+        Text(
+            text = formatTime(time),        // still mm:ss (seconds-based)
+            fontSize = 28.sp,
+            color = ColorWhite
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // --- 4 circles horizontally ---
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = metronomeViewModel.formatStopwatch(stopwatch))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { metronomeViewModel.toggle() }, shape = RoundedCornerShape(12.dp)) {
-                    Icon(
-                        imageVector = if (isRunning) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (isRunning) "Pause" else "Play"
-                    )
-                }
-                Button(
-                    onClick = { metronomeViewModel.stop() },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red)
-                ) {
-                    Icon(imageVector = Icons.Filled.Stop, contentDescription = "Stop")
-                }
+            for (index in 0..3) {
+                MetronomeCircle(index = index, currentBeat = currentBeat)
             }
-            Text(text = "BPM: $bpm")
         }
 
-        // Custom-built Icon Button as a workaround
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // --- Tap hint under circles ---
+        Text(
+            text = "Tap to show details",
+            fontSize = 16.sp,
+            color = ColorMutedGray
+        )
+
+        // Bottom spacer to balance vertically
+        Spacer(modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun MetronomeCircle(index: Int, currentBeat: Int) {
+    val isFilled = index <= currentBeat
+
+    val (targetColor, glowColor) = when (index) {
+        0 -> ColorWhite to ColorWhite.copy(alpha = 0.6f)
+        1 -> ColorMint to ColorMint.copy(alpha = 0.8f)
+        2 -> ColorWhite to ColorWhite.copy(alpha = 0.6f)
+        3 -> ColorTeal to ColorTeal.copy(alpha = 0.8f)
+        else -> ColorUnfilled to Color.Transparent
+    }
+
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isFilled) targetColor else ColorUnfilled,
+        animationSpec = tween(200),
+        label = "backgroundColor"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .shadow(
+                elevation = if (isFilled) 15.dp else 0.dp,
+                shape = CircleShape,
+                clip = false
+            )
+            .clip(CircleShape)
+            .background(backgroundColor)
+            .border(
+                width = if (isFilled) 0.dp else 2.dp,
+                color = if (isFilled) Color.Transparent else ColorUnfilledBorder,
+                shape = CircleShape
+            )
+    )
+}
+
+// --- DETAILS VIEW ---
+@Composable
+private fun DetailsView(
+    time: Int,
+    distance: Float,
+    poleStrikes: Int,
+    isPaused: Boolean,
+    onPauseToggle: () -> Unit,
+    onEndSession: () -> Unit,
+    onBack: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        // Back button
         Button(
             onClick = onBack,
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 4.dp),
+                .padding(start = 6.dp)
+                .size(32.dp),
             shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = Color.Transparent,
-                contentColor = MaterialTheme.colors.primary
-            )
+            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent)
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back"
+                imageVector = Icons.Filled.ChevronLeft,
+                contentDescription = "Back",
+                tint = ColorEmeraldGreen,
+                modifier = Modifier.size(20.dp)
             )
         }
+
+        // Main content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            // --- Time ---
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Time",
+                    color = ColorLightGray,
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatTime(time),
+                    color = ColorWhite,
+                    fontSize = 44.sp
+                )
+            }
+
+            // --- Distance / Strikes ---
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(36.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Distance", color = ColorLightGray, fontSize = 15.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("${distance.roundToInt()}m", color = ColorWhite, fontSize = 26.sp)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Strikes", color = ColorLightGray, fontSize = 15.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("$poleStrikes", color = ColorWhite, fontSize = 26.sp)
+                }
+            }
+
+            // --- Buttons ---
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = onPauseToggle,
+                    modifier = Modifier.size(54.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(backgroundColor = ColorButtonDarkGray)
+                ) {
+                    Icon(
+                        imageVector = if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                        contentDescription = if (isPaused) "Play" else "Pause",
+                        tint = ColorWhite,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                Button(
+                    onClick = onEndSession,
+                    modifier = Modifier.size(54.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(backgroundColor = ColorButtonRed)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "End Session",
+                        tint = ColorWhite,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+        }
     }
+}
+
+// --- Helper Composables & Functions ---
+@Composable
+private fun StatItem(
+    label: String,
+    value: String,
+    valueSize: androidx.compose.ui.unit.TextUnit = 36.sp
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label, color = ColorLightGray, fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            color = ColorWhite,
+            fontSize = valueSize,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+private fun formatTime(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return "%02d:%02d".format(minutes, remainingSeconds)
 }
