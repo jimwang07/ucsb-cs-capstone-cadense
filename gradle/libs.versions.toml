@@ -11,8 +11,10 @@ wear-tiles = "1.3.0"
 navigation-compose = "2.7.7"
 room = "2.6.1"
 play-services-wearable = "18.1.0"
+play-services-location = "21.0.0"
 datastore = "1.1.1"
 guava = "33.0.0-android"
+kotlinx-coroutines-play-services = "1.8.1"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
@@ -33,9 +35,11 @@ androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "play-services-wearable" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 androidx-wear-tiles = { module = "androidx.wear.tiles:tiles", version.ref = "wear-tiles" }
 androidx-wear-tiles-material = { module = "androidx.wear.tiles:tiles-material", version.ref = "wear-tiles" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinx-coroutines-play-services" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
