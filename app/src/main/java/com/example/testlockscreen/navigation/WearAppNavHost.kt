@@ -1,6 +1,8 @@
 package com.example.testlockscreen.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -40,8 +42,10 @@ fun WearAppNavHost(
             )
         }
         composable(Screen.AdjustMetronome.route) {
+            val bpm by settingsViewModel.defaultBpm.collectAsState()
             AdjustMetronomeScreen(
-                viewModel = settingsViewModel,
+                bpm = bpm,
+                onBpmChange = { settingsViewModel.setDefaultBpm(it) },
                 onBack = { navController.popBackStack() }
             )
         }
