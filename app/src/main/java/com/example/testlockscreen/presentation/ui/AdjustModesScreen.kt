@@ -16,14 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
+import com.example.testlockscreen.haptics.HapticsController
 import com.example.testlockscreen.presentation.theme.Black
 import com.example.testlockscreen.presentation.theme.EmeraldDark
 import com.example.testlockscreen.presentation.theme.EmeraldGreen
@@ -64,6 +64,7 @@ fun AdjustModesScreen(
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
+                .offset(x = (-8).dp)
                 .size(backButtonTouchTarget)
                 .clip(CircleShape)
                 .clickable(
@@ -143,7 +144,15 @@ private fun CompactSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val hapticsController = remember { HapticsController(context) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            hapticsController.cancel()
+        }
+    }
+
     val trackWidth = 42.dp
     val trackHeight = 24.dp
     val thumbDiameter = 20.dp
@@ -169,7 +178,7 @@ private fun CompactSwitch(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                hapticsController.vibrate(15)
                 onCheckedChange(!checked)
             },
         contentAlignment = Alignment.CenterStart

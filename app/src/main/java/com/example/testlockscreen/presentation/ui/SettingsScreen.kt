@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Icon
@@ -36,7 +36,6 @@ import androidx.wear.compose.material.Text
 import com.example.testlockscreen.presentation.theme.Black
 import com.example.testlockscreen.presentation.theme.EmeraldDark
 import com.example.testlockscreen.presentation.theme.EmeraldGreen
-import com.example.testlockscreen.presentation.theme.White
 
 @Composable
 fun SettingsScreen(
@@ -48,8 +47,6 @@ fun SettingsScreen(
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
 
-    val titleTopMargin = screenHeight * 0.05f
-    val titleTextSize = screenHeight * 0.06f
     val buttonWidth = screenWidth * 0.77f
     val buttonHeight = screenHeight * 0.25f
     val buttonTextSize = screenHeight * 0.08f
@@ -67,14 +64,6 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Settings",
-                fontSize = titleTextSize.value.sp,
-                fontWeight = FontWeight.Medium,
-                color = White,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = titleTopMargin)
-            )
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -147,6 +136,7 @@ fun SettingsScreen(
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
+                .offset(x = (-8).dp)
                 .size(backButtonTouchTarget)
                 .clip(CircleShape)
                 .clickable(interactionSource = backInteractionSource, indication = null, onClick = onBack),
