@@ -178,7 +178,7 @@ private fun CompactSwitch(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) {
-                hapticsController.vibrate(15)
+                hapticsController.vibrate(20)
                 onCheckedChange(!checked)
             },
         contentAlignment = Alignment.CenterStart

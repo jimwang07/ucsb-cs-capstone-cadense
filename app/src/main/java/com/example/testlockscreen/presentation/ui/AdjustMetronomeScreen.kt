@@ -196,8 +196,7 @@ fun AdjustMetronomeScreen(
         ) {
             // Rotating Layer
             RotatingWheel(
-                rotationDegrees = animatedRotation,
-                isDragging = isDragging
+                rotationDegrees = animatedRotation
             )
 
             // Stationary Layer
@@ -211,10 +210,10 @@ fun AdjustMetronomeScreen(
 }
 
 @Composable
-private fun RotatingWheel(rotationDegrees: Float, isDragging: Boolean) {
+private fun RotatingWheel(rotationDegrees: Float) {
     val outerRingWidth = 4.dp
-    val shadowElevation = if (isDragging) 30.dp else 20.dp
-    val shadowColor = if (isDragging) EmeraldGreen.copy(alpha = 0.5f) else EmeraldGreen.copy(alpha = 0.3f)
+    val shadowElevation = 20.dp
+    val shadowColor = EmeraldGreen.copy(alpha = 0.3f)
 
     Canvas(
         modifier = Modifier
@@ -227,7 +226,6 @@ private fun RotatingWheel(rotationDegrees: Float, isDragging: Boolean) {
                 ambientColor = shadowColor,
                 spotColor = shadowColor
             )
-            .background(EmeraldGreen.copy(alpha = 0.2f), CircleShape)
     ) {
         val radius = size.minDimension / 2
         // Outer Ring
@@ -347,8 +345,8 @@ private fun CenterControls(
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
-    val buttonSize = screenWidth * 0.144f
-    val iconSize = buttonSize * 0.5f
+    val buttonSize = screenWidth * 0.2f
+    val iconSize = buttonSize * 0.6f
 
     // This is the size of the parent Box that holds the wheel and these controls
     val wheelContainerWidth = screenWidth * 0.75f
