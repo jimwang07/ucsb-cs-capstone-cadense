@@ -4,14 +4,17 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-11-12T05:38:34.197934Z">
+        <DropdownSelection timestamp="2025-11-14T22:15:09.100854Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="Default" identifier="serial=192.168.0.221:5555;connection=484b0ac6" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/jerrylonct-27/.android/avd/Wear_OS_Small_Round.avd" />
             </handle>
           </Target>
         </DropdownSelection>
         <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="app.CadenseTileService">
+        <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
   </component>

@@ -6,4 +6,7 @@ sealed class Screen(val route: String) {
     object AdjustMetronome : Screen("adjust_metronome")
     object AdjustModes : Screen("adjust_modes")
     object Session : Screen("session")
+    object SessionComplete : Screen("session_complete/{time}/{distance}/{poleStrikes}") {
+        fun createRoute(time: Int, distance: Int, poleStrikes: Int) = "session_complete/$time/$distance/$poleStrikes"
+    }
 }
