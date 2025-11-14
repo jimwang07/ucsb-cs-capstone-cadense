@@ -6,11 +6,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import com.example.testlockscreen.presentation.ui.AdjustMetronomeScreen
 import com.example.testlockscreen.presentation.ui.AdjustModesScreen
 import com.example.testlockscreen.presentation.ui.LandingScreen
+import com.example.testlockscreen.presentation.ui.SessionCompleteScreen
+import com.example.testlockscreen.presentation.ui.SessionData
 import com.example.testlockscreen.presentation.ui.SessionScreen
 import com.example.testlockscreen.presentation.ui.SettingsScreen
 import com.example.testlockscreen.presentation.viewmodel.MetronomeViewModel
@@ -60,10 +64,25 @@ fun WearAppNavHost(
                 metronomeViewModel = metronomeViewModel,
                 settingsViewModel = settingsViewModel,
                 onEndSession = { time, distance, poleStrikes ->
-                    // TODO: Implement navigation to a Session Summary screen
-                    navController.popBackStack()
+                    navController.navigate(Screen.SessionComplete.createRoute(time, distance, poleStrikes))
                 },
                 onBack = { navController.popBackStack() }
+            )
+        }
+        composable(
+            route = Screen.SessionComplete.route,
+            arguments = listOf(
+                navArgument("time") { type = NavType.IntType },
+                navArgument("distance") { type = NavType.IntType },
+                navArgument("poleStrikes") { type = NavType.IntType },
+            )
+        ) { backStackEntry ->
+            val time = backStackEntry.arguments?.getInt("time") ?: 0
+            val distance = backStackEntry.arguments?.getInt("distance") ?: 0
+            val poleStrikes = backStackEntry.arguments?.getInt("poleStrikes") ?: 0
+            SessionCompleteScreen(
+                sessionData = SessionData(time, distance, poleStrikes),
+                onDoneClick = { navController.popBackStack(Screen.Landing.route, false) }
             )
         }
     }
