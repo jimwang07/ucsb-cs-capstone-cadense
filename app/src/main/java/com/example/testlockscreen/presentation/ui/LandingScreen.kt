@@ -68,7 +68,7 @@ fun LandingScreen(
                 backgroundColor = Color.DarkGray,
                 contentColor = Color.White
             ),
-            modifier = Modifier.size(width = 150.dp, height = 30.dp)
+            modifier = Modifier.size(width = 130.dp, height = 30.dp)
         ) {
             Text(text = "Settings", fontSize = 14.sp)
         }
@@ -84,7 +84,7 @@ fun LandingScreen(
                 disabledBackgroundColor = Color.DarkGray,
                 disabledContentColor = Color.White
             ),
-            modifier = Modifier.size(width = 150.dp, height = 30.dp)
+            modifier = Modifier.size(width = 130.dp, height = 30.dp)
         ) {
             Text(text = "Past Sessions", fontSize = 14.sp)
         }
