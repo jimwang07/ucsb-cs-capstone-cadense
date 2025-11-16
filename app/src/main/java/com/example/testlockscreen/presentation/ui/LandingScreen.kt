@@ -41,10 +41,10 @@ fun LandingScreen(
         Image(
             painter = painterResource(id = R.drawable.cadense_logo),
             contentDescription = "Logo",
-            modifier = Modifier.size(36.dp)
+            modifier = Modifier.size(48.dp)
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         // Start Session Button
         Button(
