@@ -1,62 +1,93 @@
 package com.example.testlockscreen.presentation.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
-import androidx.wear.compose.material.Icon
+import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.example.testlockscreen.R
 
 @Composable
 fun LandingScreen(
     onStartSession: () -> Unit,
     onShowSettings: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Spacer(modifier = Modifier.weight(1.2f)) // Pushes content down
+
+        // Logo
+        Image(
+            painter = painterResource(id = R.drawable.cadense_logo),
+            contentDescription = "Logo",
+            modifier = Modifier.size(48.dp)
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Start Session Button
+        Button(
+            onClick = onStartSession,
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = MaterialTheme.colors.primary
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "STRIDE",
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            Button(
-                onClick = onStartSession,
-                modifier = Modifier.size(150.dp, 50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(0xFF29EAB6)
-                )
-            ) {
-                Text(text = "Start Session", fontSize = 12.sp)
-            }
+            Text(text = "Start Session")
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Settings Button
         Button(
             onClick = onShowSettings,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = Color.DarkGray,
+                contentColor = Color.White
+            ),
+            modifier = Modifier.size(width = 130.dp, height = 30.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Settings"
-            )
+            Text(text = "Settings", fontSize = 14.sp)
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Past Sessions Button
+        Button(
+            onClick = { /* No action */ },
+            enabled = false,
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(
+                disabledBackgroundColor = Color.DarkGray,
+                disabledContentColor = Color.White
+            ),
+            modifier = Modifier.size(width = 130.dp, height = 30.dp)
+        ) {
+            Text(text = "Past Sessions", fontSize = 14.sp)
+        }
+        Spacer(modifier = Modifier.weight(1.3f))
     }
 }
