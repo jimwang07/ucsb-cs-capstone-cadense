@@ -1,4 +1,4 @@
-package com.example.testlockscreen.presentation.ui
+package com.example.stride.presentation.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background

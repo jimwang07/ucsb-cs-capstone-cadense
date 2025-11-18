@@ -1,4 +1,4 @@
-package com.example.testlockscreen.presentation.ui
+package com.example.stride.presentation.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +22,7 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.example.testlockscreen.R
+import com.example.stride.R
 
 @Composable
 fun LandingScreen(

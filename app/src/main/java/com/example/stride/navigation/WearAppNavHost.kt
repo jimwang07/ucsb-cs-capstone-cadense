@@ -35,8 +35,7 @@ fun WearAppNavHost(
         composable(Screen.Landing.route) {
             LandingScreen(
                 onStartSession = { navController.navigate(Screen.Session.route) },
-                onShowSettings = { navController.navigate(Screen.Settings.route) },
-                metronomeViewModel = metronomeViewModel
+                onShowSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
         composable(Screen.Settings.route) {
