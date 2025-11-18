@@ -53,12 +53,6 @@ private val GrayText = Color(0xFF9CA3AF)
 private val White = Color(0xFFFFFFFF)
 private val Black = Color(0xFF000000)
 
-data class SessionData(
-    val time: Int,
-    val distance: Int,
-    val poleStrikes: Int
-)
-
 @Composable
 fun SessionCompleteScreen(
     sessionData: SessionData,

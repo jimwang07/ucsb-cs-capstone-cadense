@@ -9,4 +9,5 @@ sealed class Screen(val route: String) {
     object SessionComplete : Screen("session_complete/{time}/{distance}/{poleStrikes}") {
         fun createRoute(time: Int, distance: Int, poleStrikes: Int) = "session_complete/$time/$distance/$poleStrikes"
     }
+    object PastSessions : Screen("past_sessions")
 }
