@@ -27,7 +27,8 @@ import com.example.stride.R
 @Composable
 fun LandingScreen(
     onStartSession: () -> Unit,
-    onShowSettings: () -> Unit
+    onShowSettings: () -> Unit,
+    onShowPastSessions: () -> Unit,
 ) {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -82,16 +83,17 @@ fun LandingScreen(
 
         Spacer(modifier = Modifier.height(screenHeight * 0.04f))
 
-        // Past Sessions Button
         Button(
-            onClick = { /* No action */ },
-            enabled = false,
+            onClick = onShowPastSessions,
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(
-                disabledBackgroundColor = Color.DarkGray,
-                disabledContentColor = Color.White
+                backgroundColor = Color.DarkGray,
+                contentColor = Color.White
             ),
-            modifier = Modifier.size(width = screenWidth * 0.65f, height = screenHeight * 0.15f)
+            modifier = Modifier.size(
+                width = screenWidth * 0.65f,
+                height = screenHeight * 0.15f
+            )
         ) {
             Text(text = "Past Sessions", fontSize = (screenHeight.value * 0.07f).sp)
         }

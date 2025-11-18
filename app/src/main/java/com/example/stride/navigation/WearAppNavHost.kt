@@ -4,21 +4,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
+import com.example.stride.data.AppDatabase
 import com.example.stride.presentation.ui.AdjustMetronomeScreen
 import com.example.stride.presentation.ui.AdjustModesScreen
 import com.example.stride.presentation.ui.LandingScreen
+import com.example.stride.presentation.ui.PastSessionsScreen
+import com.example.stride.presentation.ui.SessionCompleteScreen
+import com.example.stride.presentation.ui.SessionData
 import com.example.stride.presentation.ui.SessionScreen
 import com.example.stride.presentation.ui.SettingsScreen
 import com.example.stride.presentation.viewmodel.MetronomeViewModel
+import com.example.stride.presentation.viewmodel.PastSessionsViewModel
+import com.example.stride.presentation.viewmodel.PastSessionsViewModelFactory
 import com.example.stride.presentation.viewmodel.SettingsViewModel
-import com.example.stride.presentation.ui.SessionCompleteScreen
-import com.example.stride.presentation.ui.SessionData
 
 @Composable
 fun WearAppNavHost(
@@ -35,7 +40,8 @@ fun WearAppNavHost(
         composable(Screen.Landing.route) {
             LandingScreen(
                 onStartSession = { navController.navigate(Screen.Session.route) },
-                onShowSettings = { navController.navigate(Screen.Settings.route) }
+                onShowSettings = { navController.navigate(Screen.Settings.route) },
+                onShowPastSessions = { navController.navigate(Screen.PastSessions.route) }
             )
         }
         composable(Screen.Settings.route) {
@@ -64,7 +70,9 @@ fun WearAppNavHost(
                 metronomeViewModel = metronomeViewModel,
                 settingsViewModel = settingsViewModel,
                 onEndSession = { time, distance, poleStrikes ->
-                    navController.navigate(Screen.SessionComplete.createRoute(time, distance, poleStrikes))
+                    navController.navigate(
+                        Screen.SessionComplete.createRoute(time, distance, poleStrikes)
+                    )
                 },
                 onBack = { navController.popBackStack() }
             )
@@ -82,7 +90,41 @@ fun WearAppNavHost(
             val poleStrikes = backStackEntry.arguments?.getInt("poleStrikes") ?: 0
             SessionCompleteScreen(
                 sessionData = SessionData(time, distance, poleStrikes),
-                onDoneClick = { navController.popBackStack(Screen.Landing.route, false) }
+                onDoneClick = {
+                    navController.popBackStack(Screen.Landing.route, false)
+                }
+            )
+        }
+
+        // ---- PastSessions route ----
+        composable(Screen.PastSessions.route) {
+            val context = LocalContext.current
+
+            // Get the database & dao
+            val db = AppDatabase.getDatabase(context.applicationContext)
+            val sessionDao = db.sessionDao()
+
+            val pastSessionsViewModel: PastSessionsViewModel = viewModel(
+                factory = PastSessionsViewModelFactory(sessionDao)
+            )
+
+            val sessions by pastSessionsViewModel.sessions.collectAsState()
+
+            PastSessionsScreen(
+                sessions = sessions,
+                onBack = { navController.popBackStack() },
+                onSelectSession = { index ->
+                    val selected = sessions.getOrNull(index)
+                    if (selected != null) {
+                        navController.navigate(
+                            Screen.SessionComplete.createRoute(
+                                time = selected.time,
+                                distance = selected.distance,
+                                poleStrikes = selected.poleStrikes
+                            )
+                        )
+                    }
+                }
             )
         }
     }
