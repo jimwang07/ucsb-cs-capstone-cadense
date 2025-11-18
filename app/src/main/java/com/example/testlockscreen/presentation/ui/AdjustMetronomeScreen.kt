@@ -1,6 +1,7 @@
 package com.example.testlockscreen.presentation.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -92,8 +93,8 @@ fun AdjustMetronomeScreen(
 
     val baseBpm = 120
     val degreesPerBpm = 12f // 360 degrees / 30 BPM = 12 degrees per BPM
-    val minBpm = 60
-    val maxBpm = 180
+    val minBpm = 0
+    val maxBpm = 240
     // 720 degrees in both directions
     val maxRotation = (maxBpm - baseBpm) * degreesPerBpm
     val minRotation = (minBpm - baseBpm) * degreesPerBpm
@@ -196,7 +197,8 @@ fun AdjustMetronomeScreen(
         ) {
             // Rotating Layer
             RotatingWheel(
-                rotationDegrees = animatedRotation
+                rotationDegrees = animatedRotation,
+                isPressed = isDragging
             )
 
             // Stationary Layer
@@ -210,10 +212,18 @@ fun AdjustMetronomeScreen(
 }
 
 @Composable
-private fun RotatingWheel(rotationDegrees: Float) {
+private fun RotatingWheel(rotationDegrees: Float, isPressed: Boolean) {
     val outerRingWidth = 4.dp
-    val shadowElevation = 20.dp
-    val shadowColor = EmeraldGreen.copy(alpha = 0.3f)
+    val shadowElevation by animateDpAsState(
+        targetValue = if (isPressed) 35.dp else 20.dp,
+        label = "shadow",
+        animationSpec = tween(durationMillis = 200)
+    )
+    val shadowColor by animateColorAsState(
+        targetValue = if (isPressed) EmeraldLight.copy(alpha = 0.8f) else EmeraldGreen.copy(alpha = 0.3f),
+        label = "shadowColor",
+        animationSpec = tween(durationMillis = 200)
+    )
 
     Canvas(
         modifier = Modifier
