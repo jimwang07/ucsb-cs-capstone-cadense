@@ -406,7 +406,7 @@ private fun CenterControls(
                 .offset(x = -buttonPlacementRadius)
                 .size(buttonSize)
                 .clickable(
-                    enabled = bpm > 60,
+                    enabled = bpm > 0,
                     onClick = {
                         hapticsController.vibrate(15)
                         onBpmChange(bpm - 1)
@@ -441,7 +441,7 @@ private fun CenterControls(
                 .offset(x = buttonPlacementRadius)
                 .size(buttonSize)
                 .clickable(
-                    enabled = bpm < 180,
+                    enabled = bpm < 240,
                     onClick = {
                         hapticsController.vibrate(15)
                         onBpmChange(bpm + 1)
