@@ -95,8 +95,10 @@ fun SessionScreen(
         metronomeViewModel.setBpm(defaultBpm)
     }
 
+    // Only auto-start if this is a brand new session (stopwatch is 0)
+    // and it's not already running.
     LaunchedEffect(Unit) {
-        if (!metronomeViewModel.isRunning.value) {
+        if (!metronomeViewModel.isRunning.value && metronomeViewModel.stopwatch.value == 0L) {
             metronomeViewModel.toggle()
         }
     }
@@ -104,14 +106,18 @@ fun SessionScreen(
     // --- Lifecycle Management ---
     DisposableEffect(Unit) {
         onDispose {
-            // Ensure everything stops when leaving the screen
-            metronomeViewModel.stop()
+            // When leaving the screen, we stop haptics/audio feedback,
+            // but we DON'T call stop() because we want to keep the session state.
+            // We only pause it if it was running.
+            if (metronomeViewModel.isRunning.value) {
+                metronomeViewModel.toggle() // This will pause it
+            }
             hapticsController.cancel()
             audioMetronome.release()
         }
     }
 
-    // Ensure haptics stop immediately when paused or stopped
+    // Ensure haptics stop immediately when paused
     LaunchedEffect(isRunning) {
         if (!isRunning) {
             hapticsController.cancel()
@@ -120,7 +126,8 @@ fun SessionScreen(
 
     // --- Local UI State ---
     var showControls by remember(isVisualEnabled) { mutableStateOf(!isVisualEnabled) }
-    var poleStrikes by remember { mutableIntStateOf(0) }
+    // Initialize poleStrikes from the ViewModel if we're resuming
+    var poleStrikes by remember { mutableIntStateOf(beatCount) }
 
     LaunchedEffect(isRunning, isVisualEnabled) {
         if (isRunning && isVisualEnabled) {
@@ -130,10 +137,9 @@ fun SessionScreen(
 
     // --- Feedback Logic (per beat) ---
     LaunchedEffect(beatCount) {
-        // Double check isRunning here to avoid trailing feedback after stop()
-        if (!metronomeViewModel.isRunning.value || beatCount <= 0) return@LaunchedEffect
+        if (!isRunning || beatCount <= 0) return@LaunchedEffect
 
-        poleStrikes++
+        poleStrikes = beatCount
 
         if (isVibrationEnabled) {
             Log.d("SessionScreen", "Vibrating on beat $beatCount")
@@ -171,20 +177,17 @@ fun SessionScreen(
                 isPaused = !isRunning,
                 onPauseToggle = { metronomeViewModel.toggle() },
                 onEndSession = {
-                    // STOP EVERYTHING EXPLICITLY before navigating
                     val finalTime = stopwatch.toInt()
                     val finalDistance = distance.roundToInt()
-                    val finalStrikes = poleStrikes      // placeholder
+                    val finalStrikes = poleStrikes
                     
-                    metronomeViewModel.stop()
-                    hapticsController.cancel()
-                    
+                    // STOP and SAVE only when explicitly ending the session
                     metronomeViewModel.saveSession(finalTime, finalDistance, finalStrikes)
+                    metronomeViewModel.stop()
                     onEndSession(finalTime, finalDistance, finalStrikes)
                 },
                 onBack = {
-                    metronomeViewModel.stop()
-                    hapticsController.cancel()
+                    // Just navigate back, state is preserved in ViewModel
                     onBack()
                 }
             )
