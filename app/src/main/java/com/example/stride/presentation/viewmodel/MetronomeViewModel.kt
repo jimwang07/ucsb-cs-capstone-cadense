@@ -48,7 +48,7 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     private var stopwatchJob: Job? = null
 
     private var timeUntilNextBeat = 0L
-    private var lastBeatTime = 0L // Time of the last beat
+    private var lastBeatTime = 0L 
 
     private var stopwatchStartTime = 0L
     private var pausedStopwatchTime = 0L
@@ -72,11 +72,10 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun startLocationUpdates() {
-        Log.d("MetronomeViewModel", "Starting location updates...")
+        locationJob?.cancel()
         locationJob = locationService.getLocationUpdates()
             .catch { e -> Log.e("MetronomeViewModel", "Error getting location", e) }
             .onEach { location ->
-                Log.d("MetronomeViewModel", "New location: $location")
                 _location.value = location
                 lastLocation?.let {
                     _distance.value += location.distanceTo(it)
@@ -87,8 +86,8 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun stopLocationUpdates() {
-        Log.d("MetronomeViewModel", "Stopping location updates")
         locationJob?.cancel()
+        locationJob = null
     }
 
     fun setBpm(newBpm: Int) {
@@ -106,23 +105,25 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun start() {
+        if (_isRunning.value) return
         _isRunning.value = true
         startLocationUpdates()
         stopwatchStartTime = System.currentTimeMillis()
-        if (lastBeatTime == 0L) { // If it's the very first start
+        if (lastBeatTime == 0L) {
             lastBeatTime = System.currentTimeMillis()
         }
 
+        metronomeJob?.cancel()
         metronomeJob = viewModelScope.launch {
             if (_beatCount.value == 0) {
                 _beatCount.value++
             }
-            while (isActive) {
+            while (isActive && _isRunning.value) {
                 val delayMillis = 60000L / _bpm.value
 
                 val delayToUse = if (timeUntilNextBeat > 0) {
                     val remaining = timeUntilNextBeat
-                    timeUntilNextBeat = 0L // Consume it
+                    timeUntilNextBeat = 0L 
                     remaining
                 } else {
                     delayMillis
@@ -130,18 +131,19 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
                 delay(delayToUse)
 
-                if (!isRunning.value) break // Check again after delay
+                if (!isActive || !_isRunning.value) break 
 
                 _beatCount.value++
                 lastBeatTime = System.currentTimeMillis()
             }
         }
 
+        stopwatchJob?.cancel()
         stopwatchJob = viewModelScope.launch {
-            while (_isRunning.value) {
+            while (isActive && _isRunning.value) {
                 val elapsedTime = pausedStopwatchTime + (System.currentTimeMillis() - stopwatchStartTime)
                 _stopwatch.value = elapsedTime / 1000
-                delay(100) // Update UI frequently
+                delay(100)
             }
         }
     }
@@ -152,22 +154,25 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
 
-        // Update stopwatch time
         pausedStopwatchTime += System.currentTimeMillis() - stopwatchStartTime
 
-        // Calculate time remaining for the next beat
         val delayMillis = 60000L / _bpm.value
         val elapsedSinceLastBeat = System.currentTimeMillis() - lastBeatTime
         timeUntilNextBeat = if (elapsedSinceLastBeat < delayMillis) {
             delayMillis - elapsedSinceLastBeat
         } else {
-            0L // If we paused after a beat was due, just start a new beat on resume
+            0L 
         }
     }
 
     fun stop() {
         _isRunning.value = false
         stopLocationUpdates()
+        metronomeJob?.cancel()
+        stopwatchJob?.cancel()
+        metronomeJob = null
+        stopwatchJob = null
+        
         _beatCount.value = 0
         _stopwatch.value = 0
         _distance.value = 0.0
@@ -175,8 +180,6 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
         timeUntilNextBeat = 0L
         lastBeatTime = 0L
         pausedStopwatchTime = 0L
-        metronomeJob?.cancel()
-        stopwatchJob?.cancel()
     }
 
     fun formatStopwatch(time: Long): String {
