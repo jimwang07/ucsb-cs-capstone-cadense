@@ -43,7 +43,7 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     private var stopwatchJob: Job? = null
 
     private var timeUntilNextBeat = 0L
-    private var lastBeatTime = 0L // Time of the last beat
+    private var lastBeatTime = 0L
 
     private var stopwatchStartTime = 0L
     private var pausedStopwatchTime = 0L
@@ -78,23 +78,34 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun start() {
+        // Prevent “multiple sessions”
+        if (_isRunning.value) return
+
         _isRunning.value = true
+
+        // Ensure jobs aren’t duplicated
+        metronomeJob?.cancel()
+        stopwatchJob?.cancel()
+
         stopwatchStartTime = System.currentTimeMillis()
-        if (lastBeatTime == 0L) { // If it's the very first start
+        if (lastBeatTime == 0L) {
             lastBeatTime = System.currentTimeMillis()
         }
 
         metronomeJob = viewModelScope.launch {
             if (_beatCount.value == 0) {
                 _beatCount.value++
-                updateDistanceByStrikes() // Update for the first beat
+                lastBeatTime = System.currentTimeMillis()
+                _lastBeatTimestamp.value = lastBeatTime
+                updateDistanceByStrikes()
             }
-            while (isActive) {
+
+            while (isActive && _isRunning.value) {
                 val delayMillis = 60000L / _bpm.value
 
                 val delayToUse = if (timeUntilNextBeat > 0) {
                     val remaining = timeUntilNextBeat
-                    timeUntilNextBeat = 0L // Consume it
+                    timeUntilNextBeat = 0L
                     remaining
                 } else {
                     delayMillis
@@ -102,62 +113,60 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
                 delay(delayToUse)
 
-                if (!isRunning.value) break // Check again after delay
+                if (!isActive || !_isRunning.value) break
 
                 _beatCount.value++
                 lastBeatTime = System.currentTimeMillis()
                 _lastBeatTimestamp.value = lastBeatTime
-
-                // Update distance on every beat
                 updateDistanceByStrikes()
             }
         }
 
         stopwatchJob = viewModelScope.launch {
-            while (_isRunning.value) {
-                val elapsedTime = pausedStopwatchTime + (System.currentTimeMillis() - stopwatchStartTime)
+            while (isActive && _isRunning.value) {
+                val elapsedTime =
+                    pausedStopwatchTime + (System.currentTimeMillis() - stopwatchStartTime)
                 _stopwatch.value = elapsedTime / 1000
-                delay(100) // Update UI frequently
+                delay(100)
             }
         }
     }
 
-    private fun pause() {
+    // Public (vincent/session-overhaul) so SessionScreen can pause on lifecycle/background.
+    fun pause() {
+        if (!_isRunning.value) return
+
         _isRunning.value = false
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
 
-        // Update stopwatch time
         pausedStopwatchTime += System.currentTimeMillis() - stopwatchStartTime
 
-        // Calculate time remaining for the next beat
         val delayMillis = 60000L / _bpm.value
         val elapsedSinceLastBeat = System.currentTimeMillis() - lastBeatTime
         timeUntilNextBeat = if (elapsedSinceLastBeat < delayMillis) {
             delayMillis - elapsedSinceLastBeat
         } else {
-            0L // If we paused after a beat was due, just start a new beat on resume
+            0L
         }
     }
 
     fun stop() {
         _isRunning.value = false
+
+        metronomeJob?.cancel()
+        stopwatchJob?.cancel()
+        metronomeJob = null
+        stopwatchJob = null
+
         _beatCount.value = 0
         _stopwatch.value = 0
         _distance.value = 0.0
+
         timeUntilNextBeat = 0L
         lastBeatTime = 0L
         _lastBeatTimestamp.value = 0L
         pausedStopwatchTime = 0L
-        metronomeJob?.cancel()
-        stopwatchJob?.cancel()
-    }
-
-    fun formatStopwatch(time: Long): String {
-        val hours = time / 3600
-        val minutes = (time % 3600) / 60
-        val seconds = time % 60
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
 
     private fun updateDistanceByStrikes() {
