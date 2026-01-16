@@ -8,7 +8,8 @@ class AudioMetronome {
     private var toneGenerator: ToneGenerator? = null
 
     init {
-        toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 80)
+        // Increased volume to 100 (MAX)
+        toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
     }
 
     fun playBeep() {
