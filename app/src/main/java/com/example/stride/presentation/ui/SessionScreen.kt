@@ -1,37 +1,20 @@
 package com.example.stride.presentation.ui
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +22,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,13 +31,13 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
 import com.example.stride.audio.AudioMetronome
+import com.example.stride.audio.AudioPrompts
 import com.example.stride.haptics.HapticsController
 import com.example.stride.presentation.viewmodel.MetronomeViewModel
 import com.example.stride.presentation.viewmodel.SettingsViewModel
 import com.example.stride.presentation.theme.EmeraldDark
 
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlin.math.roundToInt
 
 // --- Color Palette ---
@@ -68,6 +52,7 @@ private val ColorButtonDarkGray = Color(0xFF374151)
 private val ColorButtonRed = Color(0xFFDC2626)
 private val ColorEmeraldGreen = Color(0xFF34D399)
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun SessionScreen(
     metronomeViewModel: MetronomeViewModel,
@@ -84,37 +69,65 @@ fun SessionScreen(
     val isVisualEnabled by settingsViewModel.isVisualEnabled.collectAsState()
     val isAudioEnabled by settingsViewModel.isAudioEnabled.collectAsState()
     val isVibrationEnabled by settingsViewModel.isVibrationEnabled.collectAsState()
-
     val defaultBpm by settingsViewModel.defaultBpm.collectAsState()
 
-    // --- Connect Settings BPM to Metronome BPM ---
-    LaunchedEffect(defaultBpm) {
-        // Whenever settings BPM changes, update metronome BPM
-        metronomeViewModel.setBpm(defaultBpm)
+    // --- Introduction Countdown State ---
+    var countdownValue by remember { mutableIntStateOf(3) }
+    var isCountdownActive by remember { mutableStateOf(true) }
+    var isAudioReady by remember { mutableStateOf(false) }
+
+    // --- Audio Prompts Player ---
+    val context = LocalContext.current
+    val audioPrompts = remember { 
+        AudioPrompts(context, onAllLoaded = { isAudioReady = true }) 
     }
 
-    LaunchedEffect(Unit) {
-        if (!metronomeViewModel.isRunning.value) {
-            metronomeViewModel.toggle()   // calls start() internally
+    // Handle Countdown Logic
+    LaunchedEffect(isCountdownActive, isAudioReady) {
+        if (isCountdownActive && isAudioReady) {
+            // Wait for GET_READY clip
+            audioPrompts.play(AudioPrompts.Prompt.GET_READY)
+            delay(2000L) 
+
+            while (countdownValue > 0) {
+                val prompt = when(countdownValue) {
+                    3 -> AudioPrompts.Prompt.THREE
+                    2 -> AudioPrompts.Prompt.TWO
+                    1 -> AudioPrompts.Prompt.ONE
+                    else -> AudioPrompts.Prompt.ONE
+                }
+                audioPrompts.play(prompt)
+                delay(1000L)
+                countdownValue--
+            }
+            
+            audioPrompts.play(AudioPrompts.Prompt.GO)
+            delay(800L) 
+            isCountdownActive = false
+            
+            // Start metronome session
+            if (!metronomeViewModel.isRunning.value) {
+                metronomeViewModel.toggle()
+            }
         }
     }
 
-    // --- Local UI and Dummy State ---
-    // If visual is enabled → start in visual mode (no controls)
-    // If visual is disabled → start in details mode (controls visible)
-    var showControls by remember(isVisualEnabled) { mutableStateOf(!isVisualEnabled) }
-    var poleStrikes by remember { mutableIntStateOf(0) }   // Simulated strikes
+    // --- Sync Settings BPM ---
+    LaunchedEffect(defaultBpm) {
+        metronomeViewModel.setBpm(defaultBpm)
+    }
 
-    // When we resume (isRunning becomes true) and visual mode is enabled,
-    // automatically return to the 4-circle visual view.
+    // --- UI Mode State ---
+    var showControls by remember(isVisualEnabled) { mutableStateOf(!isVisualEnabled) }
+    var poleStrikes by remember { mutableIntStateOf(0) }
+
     LaunchedEffect(isRunning, isVisualEnabled) {
-        if (isRunning && isVisualEnabled) {
+        if (isRunning && isVisualEnabled && !isCountdownActive) {
             showControls = false
         }
     }
 
     // --- Feedback Controllers ---
-    val context = LocalContext.current
     val hapticsController = remember { HapticsController(context) }
     val audioMetronome = remember { AudioMetronome() }
 
@@ -124,12 +137,13 @@ fun SessionScreen(
             metronomeViewModel.stop()
             hapticsController.cancel()
             audioMetronome.release()
+            audioPrompts.release()
         }
     }
     
-    // --- Feedback and Pole Strike Logic (per beat) ---
+    // --- Feedback Logic (per beat) ---
     LaunchedEffect(beatCount) {
-        if (!isRunning || beatCount <= 0) return@LaunchedEffect
+        if (!isRunning || beatCount <= 0 || isCountdownActive) return@LaunchedEffect
 
         poleStrikes++
 
@@ -141,42 +155,67 @@ fun SessionScreen(
         }
     }
 
-    // --- UI: Visual vs Details ---
-    val isTappable = isVisualEnabled
-
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable(
-                enabled = isTappable,
-                onClick = { showControls = !showControls },
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
     ) {
-        if (isVisualEnabled && !showControls) {
-            // Visual circles view (Time + 4 circles + "Tap to show details")
-            VisualModeView(
-                time = stopwatch.toInt(),
-                beatCount = beatCount
-            )
-        } else {
-            // Details view: Time, Distance, Strikes, controls
-            DetailsView(
-                time = stopwatch.toInt(),
-                distance = distance,
-                poleStrikes = poleStrikes,
-                isPaused = !isRunning,
-                onPauseToggle = { metronomeViewModel.toggle() },
-                onEndSession = {
-                    val finalTime = stopwatch.toInt()
-                    val finalDistance = distance.roundToInt()
-                    metronomeViewModel.saveSession(finalTime, finalDistance, poleStrikes)
-                    onEndSession(finalTime, finalDistance, poleStrikes)
-                },
-                onBack = onBack
-            )
+        if (!isCountdownActive) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        enabled = isVisualEnabled,
+                        onClick = { showControls = !showControls },
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    )
+            ) {
+                if (isVisualEnabled && !showControls) {
+                    VisualModeView(time = stopwatch.toInt(), beatCount = beatCount)
+                } else {
+                    DetailsView(
+                        time = stopwatch.toInt(),
+                        distance = distance,
+                        poleStrikes = poleStrikes,
+                        isPaused = !isRunning,
+                        onPauseToggle = { metronomeViewModel.toggle() },
+                        onEndSession = {
+                            val finalTime = stopwatch.toInt()
+                            val finalDistance = distance.roundToInt()
+                            metronomeViewModel.saveSession(finalTime, finalDistance, poleStrikes)
+                            onEndSession(finalTime, finalDistance, poleStrikes)
+                        },
+                        onBack = onBack
+                    )
+                }
+            }
+        }
+
+        // --- Countdown Overlay ---
+        if (isCountdownActive) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.8f)),
+                contentAlignment = Alignment.Center
+            ) {
+                AnimatedContent(
+                    targetState = countdownValue,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(200)) + scaleIn(initialScale = 0.5f) togetherWith
+                                fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 1.5f)
+                    }, label = "countdown"
+                ) { value ->
+                    Text(
+                        text = if (value > 0) value.toString() else "GO!",
+                        fontSize = 80.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (value > 0) ColorWhite else ColorTeal,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }
@@ -189,22 +228,12 @@ private fun VisualModeView(time: Int, beatCount: Int) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 2.dp), // small side padding
+            .padding(horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top spacer to keep content away from very top edge
         Spacer(modifier = Modifier.weight(1f))
-
-        // --- Time at top of the block ---
-        Text(
-            text = formatTime(time),        // still mm:ss (seconds-based)
-            fontSize = 28.sp,
-            color = ColorWhite
-        )
-
+        Text(text = formatTime(time), fontSize = 28.sp, color = ColorWhite)
         Spacer(modifier = Modifier.height(16.dp))
-
-        // --- 4 circles horizontally ---
         Row(
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -213,17 +242,8 @@ private fun VisualModeView(time: Int, beatCount: Int) {
                 MetronomeCircle(index = index, currentBeat = currentBeat)
             }
         }
-
         Spacer(modifier = Modifier.height(18.dp))
-
-        // --- Tap hint under circles ---
-        Text(
-            text = "Tap to show details",
-            fontSize = 16.sp,
-            color = ColorMutedGray
-        )
-
-        // Bottom spacer to balance vertically
+        Text(text = "Tap to show details", fontSize = 16.sp, color = ColorMutedGray)
         Spacer(modifier = Modifier.weight(1f))
     }
 }
@@ -231,29 +251,22 @@ private fun VisualModeView(time: Int, beatCount: Int) {
 @Composable
 private fun MetronomeCircle(index: Int, currentBeat: Int) {
     val isFilled = index <= currentBeat
-
-    val (targetColor, glowColor) = when (index) {
-        0 -> ColorWhite to ColorWhite.copy(alpha = 0.6f)
-        1 -> ColorMint to ColorMint.copy(alpha = 0.8f)
-        2 -> ColorWhite to ColorWhite.copy(alpha = 0.6f)
-        3 -> ColorTeal to ColorTeal.copy(alpha = 0.8f)
-        else -> ColorUnfilled to Color.Transparent
+    val targetColor = when (index) {
+        0 -> ColorWhite
+        1 -> ColorMint
+        2 -> ColorWhite
+        3 -> ColorTeal
+        else -> ColorUnfilled
     }
-
     val backgroundColor by animateColorAsState(
         targetValue = if (isFilled) targetColor else ColorUnfilled,
         animationSpec = tween(200),
-        label = "backgroundColor"
+        label = "circle_color"
     )
-
     Box(
         modifier = Modifier
             .size(32.dp)
-            .shadow(
-                elevation = if (isFilled) 15.dp else 0.dp,
-                shape = CircleShape,
-                clip = false
-            )
+            .shadow(elevation = if (isFilled) 15.dp else 0.dp, shape = CircleShape, clip = false)
             .clip(CircleShape)
             .background(backgroundColor)
             .border(
@@ -277,22 +290,16 @@ private fun DetailsView(
 ) {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-
     val backButtonIconSize = screenHeight * 0.12f
     val backButtonTouchTarget = screenHeight * 0.15f
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(all = screenHeight * 0.02f)
-    ) {
-
+    Box(modifier = Modifier.fillMaxSize().padding(all = screenHeight * 0.02f)) {
         val backInteractionSource = remember { MutableInteractionSource() }
         val isBackPressed by backInteractionSource.collectIsPressedAsState()
         val backButtonColor by animateColorAsState(
             targetValue = if (isBackPressed) EmeraldDark else ColorEmeraldGreen,
             animationSpec = tween(durationMillis = 200),
-            label = "BackButtonColor"
+            label = "back_btn_color"
         )
 
         Box(
@@ -312,30 +319,16 @@ private fun DetailsView(
             )
         }
 
-        // Main content
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(vertical = 12.dp),
+            modifier = Modifier.fillMaxSize().padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            // --- Time ---
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Time",
-                    color = ColorLightGray,
-                    fontSize = 16.sp
-                )
+                Text(text = "Time", color = ColorLightGray, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = formatTime(time),
-                    color = ColorWhite,
-                    fontSize = 44.sp
-                )
+                Text(text = formatTime(time), color = ColorWhite, fontSize = 44.sp)
             }
-
-            // --- Distance / Strikes ---
             Row(
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -351,8 +344,6 @@ private fun DetailsView(
                     Text("$poleStrikes", color = ColorWhite, fontSize = 26.sp)
                 }
             }
-
-            // --- Buttons ---
             Row(
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -385,25 +376,6 @@ private fun DetailsView(
                 }
             }
         }
-    }
-}
-
-// --- Helper Composables & Functions ---
-@Composable
-private fun StatItem(
-    label: String,
-    value: String,
-    valueSize: androidx.compose.ui.unit.TextUnit = 36.sp
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, color = ColorLightGray, fontSize = 16.sp)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            color = ColorWhite,
-            fontSize = valueSize,
-            textAlign = TextAlign.Center
-        )
     }
 }
 
