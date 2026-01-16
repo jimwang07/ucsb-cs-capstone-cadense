@@ -129,7 +129,8 @@ fun PastSessionsScreen(
                         .weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(screenHeight * 0.012f),
-                    contentPadding = PaddingValues(bottom = screenHeight * 0.02f)
+                    // Increased bottom padding to clear the circular screen curve
+                    contentPadding = PaddingValues(bottom = screenHeight * 0.3f)
                 ) {
                     itemsIndexed(sessions) { index, session ->
                         PastSessionCard(
