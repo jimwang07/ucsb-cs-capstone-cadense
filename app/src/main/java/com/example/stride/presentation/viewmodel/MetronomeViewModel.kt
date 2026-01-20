@@ -1,21 +1,15 @@
 package com.example.stride.presentation.viewmodel
 
 import android.app.Application
-import android.location.Location
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.stride.data.AppDatabase
 import com.example.stride.data.entities.Session
 import com.example.stride.data.repository.LocationRepository
-import com.example.stride.services.LocationService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -23,8 +17,6 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val sessionDao = AppDatabase.getDatabase(application).sessionDao()
     private val locationRepository = LocationRepository(sessionDao)
-    private val locationService = LocationService(application)
-    private var locationJob: Job? = null
 
     private val _isRunning = MutableStateFlow(false)
     val isRunning = _isRunning.asStateFlow()
@@ -38,9 +30,6 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _stopwatch = MutableStateFlow(0L)
     val stopwatch = _stopwatch.asStateFlow()
 
-    private val _location = MutableStateFlow<Location?>(null)
-    val location = _location.asStateFlow()
-
     private val _distance = MutableStateFlow(0.0)
     val distance = _distance.asStateFlow()
 
@@ -53,11 +42,7 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     private var stopwatchStartTime = 0L
     private var pausedStopwatchTime = 0L
 
-    private var lastLocation: Location? = null
-
-    fun onLocationPermissionGranted() {
-        Log.d("MetronomeViewModel", "onLocationPermissionGranted called")
-    }
+    private val strideLengthConstant = 0.5 // meters
 
     fun saveSession(duration: Int, distance: Int, poleStrikes: Int) {
         viewModelScope.launch {
@@ -69,26 +54,6 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
             )
             locationRepository.insertSession(session)
         }
-    }
-
-    private fun startLocationUpdates() {
-        Log.d("MetronomeViewModel", "Starting location updates...")
-        locationJob = locationService.getLocationUpdates()
-            .catch { e -> Log.e("MetronomeViewModel", "Error getting location", e) }
-            .onEach { location ->
-                Log.d("MetronomeViewModel", "New location: $location")
-                _location.value = location
-                lastLocation?.let {
-                    _distance.value += location.distanceTo(it)
-                }
-                lastLocation = location
-            }
-            .launchIn(viewModelScope)
-    }
-
-    private fun stopLocationUpdates() {
-        Log.d("MetronomeViewModel", "Stopping location updates")
-        locationJob?.cancel()
     }
 
     fun setBpm(newBpm: Int) {
@@ -107,7 +72,6 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun start() {
         _isRunning.value = true
-        startLocationUpdates()
         stopwatchStartTime = System.currentTimeMillis()
         if (lastBeatTime == 0L) { // If it's the very first start
             lastBeatTime = System.currentTimeMillis()
@@ -116,6 +80,7 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
         metronomeJob = viewModelScope.launch {
             if (_beatCount.value == 0) {
                 _beatCount.value++
+                updateDistanceByStrikes() // Update for the first beat
             }
             while (isActive) {
                 val delayMillis = 60000L / _bpm.value
@@ -134,6 +99,9 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
                 _beatCount.value++
                 lastBeatTime = System.currentTimeMillis()
+
+                // Update distance on every beat
+                updateDistanceByStrikes()
             }
         }
 
@@ -148,7 +116,6 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun pause() {
         _isRunning.value = false
-        stopLocationUpdates()
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
 
@@ -167,11 +134,9 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun stop() {
         _isRunning.value = false
-        stopLocationUpdates()
         _beatCount.value = 0
         _stopwatch.value = 0
         _distance.value = 0.0
-        lastLocation = null
         timeUntilNextBeat = 0L
         lastBeatTime = 0L
         pausedStopwatchTime = 0L
@@ -184,5 +149,9 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
         val minutes = (time % 3600) / 60
         val seconds = time % 60
         return String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    }
+
+    private fun updateDistanceByStrikes() {
+        _distance.value = _beatCount.value * strideLengthConstant
     }
 }
