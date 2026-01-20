@@ -33,6 +33,12 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _distance = MutableStateFlow(0.0)
     val distance = _distance.asStateFlow()
 
+    private val _lastBeatTimestamp = MutableStateFlow(0L)
+    val lastBeatTimestamp = _lastBeatTimestamp.asStateFlow()
+
+    private val _beatIntervalMs = MutableStateFlow(1000L)
+    val beatIntervalMs = _beatIntervalMs.asStateFlow()
+
     private var metronomeJob: Job? = null
     private var stopwatchJob: Job? = null
 
@@ -59,6 +65,7 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     fun setBpm(newBpm: Int) {
         if (newBpm > 0) {
             _bpm.value = newBpm
+            _beatIntervalMs.value = 60000L / newBpm
         }
     }
 
@@ -99,6 +106,7 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
                 _beatCount.value++
                 lastBeatTime = System.currentTimeMillis()
+                _lastBeatTimestamp.value = lastBeatTime
 
                 // Update distance on every beat
                 updateDistanceByStrikes()
@@ -139,6 +147,7 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
         _distance.value = 0.0
         timeUntilNextBeat = 0L
         lastBeatTime = 0L
+        _lastBeatTimestamp.value = 0L
         pausedStopwatchTime = 0L
         metronomeJob?.cancel()
         stopwatchJob?.cancel()
