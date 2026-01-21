@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +59,7 @@ import com.example.stride.presentation.viewmodel.SettingsViewModel
 import com.example.stride.haptics.HapticsController
 import com.example.stride.presentation.theme.EmeraldDark
 import com.example.stride.presentation.theme.EmeraldGreen
+import kotlinx.coroutines.delay
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -364,6 +366,8 @@ private fun CenterControls(
     // It's the radius of the inner ring.
     val buttonPlacementRadius = (wheelContainerWidth / 2) - 19.5.dp
 
+    val currentBpm by rememberUpdatedState(bpm)
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -395,6 +399,20 @@ private fun CenterControls(
         // Minus Button
         val minusInteractionSource = remember { MutableInteractionSource() }
         val isMinusPressed by minusInteractionSource.collectIsPressedAsState()
+
+        LaunchedEffect(isMinusPressed) {
+            if (isMinusPressed) {
+                delay(500)
+                while (isMinusPressed) {
+                    if (currentBpm > 0) {
+                        onBpmChange(currentBpm - 1)
+                        hapticsController.vibrate(10)
+                    }
+                    delay(80)
+                }
+            }
+        }
+
         val minusBgBrush = if (isMinusPressed) {
             Brush.verticalGradient(listOf(GrayMid.copy(alpha = 0.8f), GrayDark.copy(alpha = 0.8f)))
         } else {
@@ -430,6 +448,20 @@ private fun CenterControls(
         // Plus Button
         val plusInteractionSource = remember { MutableInteractionSource() }
         val isPlusPressed by plusInteractionSource.collectIsPressedAsState()
+
+        LaunchedEffect(isPlusPressed) {
+            if (isPlusPressed) {
+                delay(500)
+                while (isPlusPressed) {
+                    if (currentBpm < 240) {
+                        onBpmChange(currentBpm + 1)
+                        hapticsController.vibrate(10)
+                    }
+                    delay(80)
+                }
+            }
+        }
+
         val plusBgBrush = if (isPlusPressed) {
             Brush.verticalGradient(listOf(EmeraldLight, EmeraldDim))
         } else {
