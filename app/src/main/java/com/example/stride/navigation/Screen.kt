@@ -4,6 +4,7 @@ sealed class Screen(val route: String) {
     object Landing : Screen("landing")
     object Settings : Screen("settings")
     object AdjustMetronome : Screen("adjust_metronome")
+    object TapBpm : Screen("tap_bpm")
     object AdjustModes : Screen("adjust_modes")
     object Session : Screen("session")
     object SessionComplete : Screen("session_complete/{time}/{distance}/{poleStrikes}/{onBeatPercent}/{avgOffset}") {

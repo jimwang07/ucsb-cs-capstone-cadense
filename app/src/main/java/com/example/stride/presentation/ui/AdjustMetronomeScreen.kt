@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -55,7 +56,6 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
-import com.example.stride.presentation.viewmodel.SettingsViewModel
 import com.example.stride.haptics.HapticsController
 import com.example.stride.presentation.theme.EmeraldDark
 import com.example.stride.presentation.theme.EmeraldGreen
@@ -79,6 +79,7 @@ private val Emerald100 = Color(0xFFD1FAE5)
 fun AdjustMetronomeScreen(
     bpm: Int,
     onBpmChange: (Int) -> Unit,
+    onTapBpm: () -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -152,6 +153,32 @@ fun AdjustMetronomeScreen(
                 contentDescription = "Back",
                 modifier = Modifier.size(backButtonIconSize),
                 tint = backButtonColor
+            )
+        }
+
+        // Tap BPM Button
+        val tapInteractionSource = remember { MutableInteractionSource() }
+        val isTapPressed by tapInteractionSource.collectIsPressedAsState()
+        val tapButtonColor by animateColorAsState(
+            targetValue = if (isTapPressed) EmeraldLight else EmeraldGreen,
+            animationSpec = tween(durationMillis = 200),
+            label = "TapButtonColor"
+        )
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .offset(x = 8.dp)
+                .size(backButtonTouchTarget)
+                .clip(CircleShape)
+                .clickable(interactionSource = tapInteractionSource, indication = null, onClick = onTapBpm),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Tap BPM",
+                modifier = Modifier.size(backButtonIconSize * 0.8f),
+                tint = tapButtonColor
             )
         }
 
