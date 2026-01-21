@@ -1,6 +1,8 @@
 package com.example.stride.presentation.ui
 
+import android.app.Activity
 import android.util.Log
+import android.view.WindowManager
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -40,8 +42,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
@@ -89,6 +94,30 @@ fun SessionScreen(
     val context = LocalContext.current
     val hapticsController = remember { HapticsController(context) }
     val audioMetronome = remember { AudioMetronome() }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // --- Lifecycle Awareness: Pause when app goes to background ---
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                Log.d("SessionScreen", "App paused, pausing metronome")
+                metronomeViewModel.pause()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // --- Keep Screen On Logic ---
+    DisposableEffect(Unit) {
+        val window = (context as? Activity)?.window
+        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     // --- Connect Settings BPM to Metronome BPM ---
     LaunchedEffect(defaultBpm) {
@@ -103,14 +132,11 @@ fun SessionScreen(
         }
     }
 
-    // --- Lifecycle Management ---
+    // --- Cleanup when leaving screen ---
     DisposableEffect(Unit) {
         onDispose {
-            // When leaving the screen, we stop haptics/audio feedback,
-            // but we DON'T call stop() because we want to keep the session state.
-            // We only pause it if it was running.
             if (metronomeViewModel.isRunning.value) {
-                metronomeViewModel.toggle() // This will pause it
+                metronomeViewModel.pause()
             }
             hapticsController.cancel()
             audioMetronome.release()
@@ -126,7 +152,6 @@ fun SessionScreen(
 
     // --- Local UI State ---
     var showControls by remember(isVisualEnabled) { mutableStateOf(!isVisualEnabled) }
-    // Initialize poleStrikes from the ViewModel if we're resuming
     var poleStrikes by remember { mutableIntStateOf(beatCount) }
 
     LaunchedEffect(isRunning, isVisualEnabled) {
@@ -181,13 +206,11 @@ fun SessionScreen(
                     val finalDistance = distance.roundToInt()
                     val finalStrikes = poleStrikes
                     
-                    // STOP and SAVE only when explicitly ending the session
                     metronomeViewModel.saveSession(finalTime, finalDistance, finalStrikes)
                     metronomeViewModel.stop()
                     onEndSession(finalTime, finalDistance, finalStrikes)
                 },
                 onBack = {
-                    // Just navigate back, state is preserved in ViewModel
                     onBack()
                 }
             )
@@ -241,12 +264,12 @@ private fun VisualModeView(time: Int, beatCount: Int) {
 private fun MetronomeCircle(index: Int, currentBeat: Int) {
     val isFilled = index <= currentBeat
 
-    val (targetColor, glowColor) = when (index) {
-        0 -> ColorWhite to ColorWhite.copy(alpha = 0.6f)
-        1 -> ColorMint to ColorMint.copy(alpha = 0.8f)
-        2 -> ColorWhite to ColorWhite.copy(alpha = 0.6f)
-        3 -> ColorTeal to ColorTeal.copy(alpha = 0.8f)
-        else -> ColorUnfilled to Color.Transparent
+    val targetColor = when (index) {
+        0 -> ColorWhite
+        1 -> ColorMint
+        2 -> ColorWhite
+        3 -> ColorTeal
+        else -> ColorUnfilled
     }
 
     val backgroundColor by animateColorAsState(
