@@ -54,6 +54,16 @@ import com.example.stride.sensors.PoleStrikeDetector
 import com.example.stride.timing.PoleStrikeTimingManager
 import com.example.stride.timing.TimingFeedback
 import com.example.stride.timing.TimingStats
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.mutableIntStateOf
+import com.example.stride.audio.AudioPrompts
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -74,6 +84,7 @@ private val ColorEmeraldGreen = Color(0xFF34D399)
 private val ColorOnBeat = Color(0xFF22C55E)   // Green for on-beat
 private val ColorOffBeat = Color(0xFFEF4444)  // Red for off-beat
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun SessionScreen(
     metronomeViewModel: MetronomeViewModel,
@@ -92,28 +103,67 @@ fun SessionScreen(
     val isVisualEnabled by settingsViewModel.isVisualEnabled.collectAsState()
     val isAudioEnabled by settingsViewModel.isAudioEnabled.collectAsState()
     val isVibrationEnabled by settingsViewModel.isVibrationEnabled.collectAsState()
-
     val defaultBpm by settingsViewModel.defaultBpm.collectAsState()
+
+    // --- Intro countdown state (FROM OLD CODE) ---
+    var countdownValue by remember { mutableIntStateOf(3) }
+    var isCountdownActive by remember { mutableStateOf(true) }
+    var isAudioReady by remember { mutableStateOf(false) }
+
+    // --- Audio Prompts (FROM OLD CODE) ---
+    val context = LocalContext.current
+    val audioPrompts = remember {
+        AudioPrompts(context, onAllLoaded = { isAudioReady = true })
+    }
 
     // --- Connect Settings BPM to Metronome BPM ---
     LaunchedEffect(defaultBpm) {
-        // Whenever settings BPM changes, update metronome BPM
         metronomeViewModel.setBpm(defaultBpm)
     }
 
-    LaunchedEffect(Unit) {
-        if (!metronomeViewModel.isRunning.value) {
-            metronomeViewModel.toggle()   // calls start() internally
+    /**
+     * IMPORTANT CHANGE:
+     * Remove the "auto-start metronome on launch" behavior and instead start it
+     * only after the countdown finishes.
+     *
+     * (So delete your old LaunchedEffect(Unit) { toggle() } and use this instead.)
+     */
+    LaunchedEffect(isCountdownActive, isAudioReady) {
+        if (isCountdownActive && isAudioReady) {
+            // Intro prompt
+            audioPrompts.play(AudioPrompts.Prompt.GET_READY)
+            delay(2000L)
+
+            // 3-2-1
+            while (countdownValue > 0) {
+                val prompt = when (countdownValue) {
+                    3 -> AudioPrompts.Prompt.THREE
+                    2 -> AudioPrompts.Prompt.TWO
+                    else -> AudioPrompts.Prompt.ONE
+                }
+                audioPrompts.play(prompt)
+                delay(1000L)
+                countdownValue--
+            }
+
+            // GO
+            audioPrompts.play(AudioPrompts.Prompt.GO)
+            delay(800L)
+
+            // End countdown overlay
+            isCountdownActive = false
+
+            // Start metronome session
+            if (!metronomeViewModel.isRunning.value) {
+                metronomeViewModel.toggle()
+            }
         }
     }
 
     // --- Local UI State ---
-    // If visual is enabled → start in visual mode (no controls)
-    // If visual is disabled → start in details mode (controls visible)
     var showControls by remember(isVisualEnabled) { mutableStateOf(!isVisualEnabled) }
 
     // --- Feedback Controllers ---
-    val context = LocalContext.current
     val hapticsController = remember { HapticsController(context) }
     val audioMetronome = remember { AudioMetronome() }
 
@@ -126,10 +176,9 @@ fun SessionScreen(
     val timingStats by timingManager.stats.collectAsState()
     val poleStrikes by timingManager.strikeCount.collectAsState()
 
-    // When we resume (isRunning becomes true) and visual mode is enabled,
-    // automatically return to the 4-circle visual view.
-    LaunchedEffect(isRunning, isVisualEnabled) {
-        if (isRunning && isVisualEnabled) {
+    LaunchedEffect(isRunning, isVisualEnabled, isCountdownActive) {
+        // only auto-hide controls in visual mode AFTER countdown ends
+        if (!isCountdownActive && isRunning && isVisualEnabled) {
             showControls = false
         }
     }
@@ -140,6 +189,7 @@ fun SessionScreen(
             metronomeViewModel.stop()
             hapticsController.cancel()
             audioMetronome.release()
+            audioPrompts.release()
             timingManager.reset()
         }
     }
@@ -148,7 +198,8 @@ fun SessionScreen(
     LaunchedEffect(Unit) {
         poleStrikeDetector.startDetection()
         poleStrikeDetector.strikeEvents.collect { strikeEvent ->
-            if (isRunning) {
+            // IMPORTANT: ignore strikes until countdown finishes
+            if (!isCountdownActive && isRunning) {
                 timingManager.processStrike(strikeEvent, lastBeatTimestamp, beatIntervalMs)
             }
         }
@@ -156,6 +207,8 @@ fun SessionScreen(
 
     // --- Metronome Feedback (per beat) ---
     LaunchedEffect(beatCount) {
+        // IMPORTANT: block feedback until countdown finishes
+        if (isCountdownActive) return@LaunchedEffect
         if (!isRunning || beatCount <= 0) return@LaunchedEffect
 
         if (isVibrationEnabled) {
@@ -178,7 +231,7 @@ fun SessionScreen(
     )
 
     // --- UI: Visual vs Details ---
-    val isTappable = isVisualEnabled
+    val isTappable = isVisualEnabled && !isCountdownActive
 
     Box(
         modifier = Modifier
@@ -192,28 +245,52 @@ fun SessionScreen(
                 interactionSource = remember { MutableInteractionSource() }
             )
     ) {
-        if (isVisualEnabled && !showControls) {
-            // Visual circles view (Time + 4 circles + "Tap to show details")
-            VisualModeView(
-                time = stopwatch.toInt(),
-                beatCount = beatCount
-            )
-        } else {
-            // Details view: Time, Distance, Strikes, controls
-            DetailsView(
-                time = stopwatch.toInt(),
-                distance = distance,
-                poleStrikes = poleStrikes,
-                isPaused = !isRunning,
-                onPauseToggle = { metronomeViewModel.toggle() },
-                onEndSession = {
-                    val finalTime = stopwatch.toInt()
-                    val finalDistance = distance.roundToInt()
-                    metronomeViewModel.saveSession(finalTime, finalDistance, poleStrikes)
-                    onEndSession(finalTime, finalDistance, poleStrikes, timingStats)
-                },
-                onBack = onBack
-            )
+        // MAIN CONTENT only after countdown ends
+        if (!isCountdownActive) {
+            if (isVisualEnabled && !showControls) {
+                VisualModeView(time = stopwatch.toInt(), beatCount = beatCount)
+            } else {
+                DetailsView(
+                    time = stopwatch.toInt(),
+                    distance = distance,
+                    poleStrikes = poleStrikes,
+                    isPaused = !isRunning,
+                    onPauseToggle = { metronomeViewModel.toggle() },
+                    onEndSession = {
+                        val finalTime = stopwatch.toInt()
+                        val finalDistance = distance.roundToInt()
+                        metronomeViewModel.saveSession(finalTime, finalDistance, poleStrikes)
+                        onEndSession(finalTime, finalDistance, poleStrikes, timingStats)
+                    },
+                    onBack = onBack
+                )
+            }
+        }
+
+        // COUNTDOWN OVERLAY (FROM OLD CODE)
+        if (isCountdownActive) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.8f)),
+                contentAlignment = Alignment.Center
+            ) {
+                AnimatedContent(
+                    targetState = countdownValue,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(200)) + scaleIn(initialScale = 0.5f) togetherWith
+                                fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 1.5f)
+                    },
+                    label = "countdown"
+                ) { value ->
+                    Text(
+                        text = if (value > 0) value.toString() else "GO!",
+                        fontSize = 80.sp,
+                        color = if (value > 0) ColorWhite else ColorTeal,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }
