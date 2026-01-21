@@ -29,6 +29,7 @@ fun LandingScreen(
     onStartSession: () -> Unit,
     onShowSettings: () -> Unit,
     onShowPastSessions: () -> Unit,
+    isSessionInProgress: Boolean = false
 ) {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -52,7 +53,7 @@ fun LandingScreen(
 
         Spacer(modifier = Modifier.height(screenHeight * 0.02f))
 
-        // Start Session Button
+        // Start/Continue Session Button
         Button(
             onClick = onStartSession,
             shape = RoundedCornerShape(50),
@@ -63,7 +64,10 @@ fun LandingScreen(
                 .fillMaxWidth()
                 .height(screenHeight * 0.2f) // Set explicit height
         ) {
-            Text(text = "Start Session", fontSize = (screenHeight.value * 0.08f).sp)
+            Text(
+                text = if (isSessionInProgress) "Continue Session" else "Start Session",
+                fontSize = (screenHeight.value * 0.08f).sp
+            )
         }
 
         Spacer(modifier = Modifier.height(screenHeight * 0.04f))

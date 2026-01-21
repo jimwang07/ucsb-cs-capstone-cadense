@@ -39,10 +39,12 @@ fun WearAppNavHost(
         modifier = modifier
     ) {
         composable(Screen.Landing.route) {
+            val stopwatch by metronomeViewModel.stopwatch.collectAsState()
             LandingScreen(
                 onStartSession = { navController.navigate(Screen.Session.route) },
                 onShowSettings = { navController.navigate(Screen.Settings.route) },
-                onShowPastSessions = { navController.navigate(Screen.PastSessions.route) }
+                onShowPastSessions = { navController.navigate(Screen.PastSessions.route) },
+                isSessionInProgress = stopwatch > 0
             )
         }
         composable(Screen.Settings.route) {
