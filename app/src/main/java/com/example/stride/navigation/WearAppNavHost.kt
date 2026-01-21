@@ -24,6 +24,7 @@ import com.example.stride.presentation.viewmodel.MetronomeViewModel
 import com.example.stride.presentation.viewmodel.PastSessionsViewModel
 import com.example.stride.presentation.viewmodel.PastSessionsViewModelFactory
 import com.example.stride.presentation.viewmodel.SettingsViewModel
+import com.example.stride.timing.TimingStats
 
 @Composable
 fun WearAppNavHost(
@@ -69,9 +70,15 @@ fun WearAppNavHost(
             SessionScreen(
                 metronomeViewModel = metronomeViewModel,
                 settingsViewModel = settingsViewModel,
-                onEndSession = { time, distance, poleStrikes ->
+                onEndSession = { time, distance, poleStrikes, timingStats ->
                     navController.navigate(
-                        Screen.SessionComplete.createRoute(time, distance, poleStrikes)
+                        Screen.SessionComplete.createRoute(
+                            time = time,
+                            distance = distance,
+                            poleStrikes = poleStrikes,
+                            onBeatPercent = timingStats.onBeatPercentage.toInt(),
+                            avgOffset = timingStats.averageOffsetMs.toInt()
+                        )
                     )
                 },
                 onBack = { navController.popBackStack() }
@@ -83,13 +90,27 @@ fun WearAppNavHost(
                 navArgument("time") { type = NavType.IntType },
                 navArgument("distance") { type = NavType.IntType },
                 navArgument("poleStrikes") { type = NavType.IntType },
+                navArgument("onBeatPercent") { type = NavType.IntType },
+                navArgument("avgOffset") { type = NavType.IntType },
             )
         ) { backStackEntry ->
             val time = backStackEntry.arguments?.getInt("time") ?: 0
             val distance = backStackEntry.arguments?.getInt("distance") ?: 0
             val poleStrikes = backStackEntry.arguments?.getInt("poleStrikes") ?: 0
+            val onBeatPercent = backStackEntry.arguments?.getInt("onBeatPercent") ?: 0
+            val avgOffset = backStackEntry.arguments?.getInt("avgOffset") ?: 0
             SessionCompleteScreen(
-                sessionData = SessionData(time, distance, poleStrikes),
+                sessionData = SessionData(
+                    time = time,
+                    distance = distance,
+                    poleStrikes = poleStrikes,
+                    timingStats = TimingStats(
+                        totalStrikes = poleStrikes,
+                        onBeatStrikes = (poleStrikes * onBeatPercent / 100),
+                        offBeatStrikes = poleStrikes - (poleStrikes * onBeatPercent / 100),
+                        totalAbsoluteOffsetMs = (avgOffset * poleStrikes).toLong()
+                    )
+                ),
                 onDoneClick = {
                     navController.popBackStack(Screen.Landing.route, false)
                 }
@@ -120,7 +141,9 @@ fun WearAppNavHost(
                             Screen.SessionComplete.createRoute(
                                 time = selected.time,
                                 distance = selected.distance,
-                                poleStrikes = selected.poleStrikes
+                                poleStrikes = selected.poleStrikes,
+                                onBeatPercent = 0,  // Past sessions don't have timing stats
+                                avgOffset = 0
                             )
                         )
                     }

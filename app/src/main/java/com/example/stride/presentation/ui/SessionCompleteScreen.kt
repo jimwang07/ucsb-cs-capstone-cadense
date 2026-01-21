@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.QueryBuilder
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -49,6 +51,10 @@ private val PurpleIcon = Color(0xFFC084FC)
 private val PurpleBg = Color(0x33A855F7)
 private val AmberIcon = Color(0xFFFBBF24)
 private val AmberBg = Color(0x33F59E0B)
+private val GreenIcon = Color(0xFF22C55E)
+private val GreenBg = Color(0x3322C55E)
+private val OrangeIcon = Color(0xFFFB923C)
+private val OrangeBg = Color(0x33FB923C)
 private val GrayText = Color(0xFF9CA3AF)
 private val White = Color(0xFFFFFFFF)
 private val Black = Color(0xFF000000)
@@ -144,6 +150,22 @@ private fun StatisticsGrid(sessionData: SessionData) {
             label = "Strikes",
             value = sessionData.poleStrikes.toString(),
             unit = ""
+        )
+        StatRow(
+            icon = Icons.Default.Timer,
+            iconBgColor = GreenBg,
+            iconColor = GreenIcon,
+            label = "Accuracy",
+            value = "${sessionData.timingStats.onBeatPercentage.toInt()}",
+            unit = "%"
+        )
+        StatRow(
+            icon = Icons.Default.Speed,
+            iconBgColor = OrangeBg,
+            iconColor = OrangeIcon,
+            label = "Avg Offset",
+            value = "${sessionData.timingStats.averageOffsetMs.toInt()}",
+            unit = "ms"
         )
     }
 }
