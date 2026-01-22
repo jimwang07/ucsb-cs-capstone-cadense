@@ -9,5 +9,7 @@ data class Session(
     val timestamp: Long,
     val duration: Int,
     val distance: Int,
-    val poleStrikes: Int
+    val poleStrikes: Int,
+    val onBeatPercent: Int,
+    val avgOffsetMs: Int
 )

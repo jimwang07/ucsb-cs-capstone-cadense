@@ -123,7 +123,6 @@ fun WearAppNavHost(
         composable(Screen.PastSessions.route) {
             val context = LocalContext.current
 
-            // Get the database & dao
             val db = AppDatabase.getDatabase(context.applicationContext)
             val sessionDao = db.sessionDao()
 
@@ -144,8 +143,8 @@ fun WearAppNavHost(
                                 time = selected.time,
                                 distance = selected.distance,
                                 poleStrikes = selected.poleStrikes,
-                                onBeatPercent = 0,  // Past sessions don't have timing stats
-                                avgOffset = 0
+                                onBeatPercent = selected.timingStats.onBeatPercentage.toInt(),
+                                avgOffset = selected.timingStats.averageOffsetMs.toInt()
                             )
                         )
                     }
