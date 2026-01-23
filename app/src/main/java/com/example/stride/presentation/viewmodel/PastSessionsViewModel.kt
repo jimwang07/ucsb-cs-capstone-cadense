@@ -30,9 +30,8 @@ class PastSessionsViewModel(
                     val offBeatStrikes = (totalStrikes - onBeatStrikes).coerceAtLeast(0)
 
                     SessionData(
-                        time = s.duration,     // duration -> time (seconds)
-                        distance = s.distance,
-                        poleStrikes = totalStrikes,
+                        time = s.duration,          // map duration -> time (seconds)
+                        poleStrikes = s.poleStrikes,
                         timingStats = TimingStats(
                             totalStrikes = totalStrikes,
                             onBeatStrikes = onBeatStrikes,

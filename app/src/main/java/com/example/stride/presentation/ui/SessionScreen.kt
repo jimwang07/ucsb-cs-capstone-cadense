@@ -92,14 +92,13 @@ private val ColorOffBeat = Color(0xFFEF4444)
 fun SessionScreen(
     metronomeViewModel: MetronomeViewModel,
     settingsViewModel: SettingsViewModel,
-    onEndSession: (time: Int, distance: Int, poleStrikes: Int, timingStats: TimingStats) -> Unit,
+    onEndSession: (time: Int, poleStrikes: Int, timingStats: TimingStats) -> Unit,
     onBack: () -> Unit
 ) {
     // --- State from ViewModels ---
     val isRunning by metronomeViewModel.isRunning.collectAsState()
     val beatCount by metronomeViewModel.beatCount.collectAsState()
     val stopwatch by metronomeViewModel.stopwatch.collectAsState()
-    val distance by metronomeViewModel.distance.collectAsState()
     val lastBeatTimestamp by metronomeViewModel.lastBeatTimestamp.collectAsState()
     val beatIntervalMs by metronomeViewModel.beatIntervalMs.collectAsState()
 
@@ -278,18 +277,16 @@ fun SessionScreen(
             } else {
                 DetailsView(
                     time = stopwatch.toInt(),
-                    distance = distance,
                     poleStrikes = poleStrikes,
                     isPaused = !isRunning,
                     onPauseToggle = { metronomeViewModel.toggle() },
                     onEndSession = {
                         val finalTime = stopwatch.toInt()
-                        val finalDistance = distance.roundToInt()
                         val finalStrikes = poleStrikes
 
-                        metronomeViewModel.saveSession(finalTime, finalDistance, finalStrikes, timingStats)
+                        metronomeViewModel.saveSession(finalTime, finalStrikes, timingStats)
                         metronomeViewModel.stop() // ending means reset hard
-                        onEndSession(finalTime, finalDistance, finalStrikes, timingStats)
+                        onEndSession(finalTime, finalStrikes, timingStats)
                     },
                     onBack = {
                         // Prevent “multiple sessions” / runaway when leaving
@@ -410,7 +407,6 @@ private fun MetronomeCircle(index: Int, currentBeat: Int) {
 @Composable
 private fun DetailsView(
     time: Int,
-    distance: Double,
     poleStrikes: Int,
     isPaused: Boolean,
     onPauseToggle: () -> Unit,
@@ -470,20 +466,11 @@ private fun DetailsView(
                 Text(text = formatTime(time), color = ColorWhite, fontSize = 44.sp)
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Distance", color = ColorLightGray, fontSize = 15.sp)
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text("${distance.roundToInt()}m", color = ColorWhite, fontSize = 26.sp)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Strikes", color = ColorLightGray, fontSize = 15.sp)
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text("$poleStrikes", color = ColorWhite, fontSize = 26.sp)
-                }
+            // --- Strikes ---
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Strikes", color = ColorLightGray, fontSize = 15.sp)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text("$poleStrikes", color = ColorWhite, fontSize = 26.sp)
             }
 
             Row(

@@ -5,7 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.stride.data.AppDatabase
 import com.example.stride.data.entities.Session
-import com.example.stride.data.repository.LocationRepository
+import com.example.stride.data.repository.SessionRepository
 import com.example.stride.timing.TimingStats
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 class MetronomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val sessionDao = AppDatabase.getDatabase(application).sessionDao()
-    private val locationRepository = LocationRepository(sessionDao)
+    private val sessionRepository = SessionRepository(sessionDao)
 
     private val _isRunning = MutableStateFlow(false)
     val isRunning = _isRunning.asStateFlow()
@@ -30,9 +30,6 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _stopwatch = MutableStateFlow(0L)
     val stopwatch = _stopwatch.asStateFlow()
-
-    private val _distance = MutableStateFlow(0.0)
-    val distance = _distance.asStateFlow()
 
     private val _lastBeatTimestamp = MutableStateFlow(0L)
     val lastBeatTimestamp = _lastBeatTimestamp.asStateFlow()
@@ -49,22 +46,19 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
     private var stopwatchStartTime = 0L
     private var pausedStopwatchTime = 0L
 
-    private val strideLengthConstant = 0.5 // meters
-
     /**
      * UPDATED: now saves timing stats too.
      */
-    fun saveSession(duration: Int, distance: Int, poleStrikes: Int, timingStats: TimingStats) {
+    fun saveSession(duration: Int, poleStrikes: Int, timingStats: TimingStats) {
         viewModelScope.launch {
             val session = Session(
                 timestamp = System.currentTimeMillis(),
                 duration = duration,
-                distance = distance,
                 poleStrikes = poleStrikes,
                 onBeatPercent = timingStats.onBeatPercentage.toInt(),
                 avgOffsetMs = timingStats.averageOffsetMs.toInt()
             )
-            locationRepository.insertSession(session)
+            sessionRepository.insertSession(session)
         }
     }
 
@@ -103,7 +97,6 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
                 _beatCount.value++
                 lastBeatTime = System.currentTimeMillis()
                 _lastBeatTimestamp.value = lastBeatTime
-                updateDistanceByStrikes()
             }
 
             while (isActive && _isRunning.value) {
@@ -124,7 +117,6 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
                 _beatCount.value++
                 lastBeatTime = System.currentTimeMillis()
                 _lastBeatTimestamp.value = lastBeatTime
-                updateDistanceByStrikes()
             }
         }
 
@@ -167,15 +159,9 @@ class MetronomeViewModel(application: Application) : AndroidViewModel(applicatio
 
         _beatCount.value = 0
         _stopwatch.value = 0
-        _distance.value = 0.0
-
         timeUntilNextBeat = 0L
         lastBeatTime = 0L
         _lastBeatTimestamp.value = 0L
         pausedStopwatchTime = 0L
-    }
-
-    private fun updateDistanceByStrikes() {
-        _distance.value = _beatCount.value * strideLengthConstant
     }
 }

@@ -7,7 +7,6 @@ import com.example.stride.timing.TimingStats
  */
 data class SessionData(
     val time: Int,
-    val distance: Int,
     val poleStrikes: Int,
     val timingStats: TimingStats = TimingStats()
 )
