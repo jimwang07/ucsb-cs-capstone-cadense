@@ -5,26 +5,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.QueryBuilder
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -68,6 +60,8 @@ fun SessionCompleteScreen(
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
 
+    val scrollState = rememberScrollState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -76,8 +70,13 @@ fun SessionCompleteScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(vertical = screenHeight * 0.04f, horizontal = screenWidth * 0.03f),
-            verticalArrangement = Arrangement.SpaceAround,
+                .verticalScroll(scrollState)
+                .padding(
+                    vertical = screenHeight * 0.04f,
+                    horizontal = screenWidth * 0.03f
+                )
+                .padding(bottom = screenHeight * 0.3f),
+            verticalArrangement = Arrangement.spacedBy(screenHeight * 0.03f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             SuccessHeader()
@@ -96,7 +95,7 @@ private fun SuccessHeader() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .size(screenWidth * 0.12f) // Smaller checkmark circle
+                .size(screenWidth * 0.12f)
                 .clip(CircleShape)
                 .background(EmeraldGreen),
             contentAlignment = Alignment.Center
@@ -104,15 +103,15 @@ private fun SuccessHeader() {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = "Success",
-                modifier = Modifier.size(screenWidth * 0.06f), // Smaller checkmark icon
+                modifier = Modifier.size(screenWidth * 0.06f),
                 tint = Black
             )
         }
-        Spacer(modifier = Modifier.height(screenHeight * 0.01f)) // 1% of screen height
+        Spacer(modifier = Modifier.height(screenHeight * 0.01f))
         Text(
             text = "Session Complete",
             color = EmeraldGreen,
-            fontSize = (screenHeight.value * 0.055f).sp, // ~5.5% of screen height
+            fontSize = (screenHeight.value * 0.055f).sp,
             textAlign = TextAlign.Center
         )
     }
@@ -124,8 +123,8 @@ private fun StatisticsGrid(sessionData: SessionData) {
     val screenHeight = configuration.screenHeightDp.dp
 
     Column(
-        modifier = Modifier.fillMaxWidth(0.8f), // 80% of screen width
-        verticalArrangement = Arrangement.spacedBy(screenHeight * 0.0205f) // 2.05% of screen height
+        modifier = Modifier.fillMaxWidth(0.8f),
+        verticalArrangement = Arrangement.spacedBy(screenHeight * 0.0205f)
     ) {
         StatRow(
             icon = Icons.Default.QueryBuilder,
@@ -191,7 +190,7 @@ private fun StatRow(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(screenWidth * 0.103f) // 10.3% of screen width
+                    .size(screenWidth * 0.103f)
                     .clip(CircleShape)
                     .background(iconBgColor),
                 contentAlignment = Alignment.Center
@@ -199,15 +198,15 @@ private fun StatRow(
                 Icon(
                     imageVector = icon,
                     contentDescription = label,
-                    modifier = Modifier.size(screenWidth * 0.051f), // 5.1% of screen width
+                    modifier = Modifier.size(screenWidth * 0.051f),
                     tint = iconColor
                 )
             }
-            Spacer(modifier = Modifier.width(screenWidth * 0.0205f)) // 2.05% of screen width
+            Spacer(modifier = Modifier.width(screenWidth * 0.0205f))
             Text(
                 text = label,
                 color = GrayText,
-                fontSize = (screenHeight.value * 0.05f).sp // 5% of screen height
+                fontSize = (screenHeight.value * 0.05f).sp
             )
         }
         Row(verticalAlignment = Alignment.Bottom) {
@@ -221,7 +220,7 @@ private fun StatRow(
                 Text(
                     text = unit,
                     color = GrayText,
-                    fontSize = (screenHeight.value * 0.054f).sp, // 5.4% of screen height
+                    fontSize = (screenHeight.value * 0.054f).sp,
                     modifier = Modifier.padding(bottom = (screenHeight * 0.01f))
                 )
             }
@@ -233,7 +232,10 @@ private fun StatRow(
 private fun DoneButton(onDone: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val backgroundColor by animateColorAsState(if (isPressed) EmeraldPressed else EmeraldGreen, label = "background")
+    val backgroundColor by animateColorAsState(
+        if (isPressed) EmeraldPressed else EmeraldGreen,
+        label = "background"
+    )
 
     Box(
         modifier = Modifier
@@ -248,7 +250,7 @@ private fun DoneButton(onDone: () -> Unit) {
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = null, // Disable ripple to show color change
+                indication = null,
                 onClick = onDone
             )
             .padding(vertical = 8.dp),

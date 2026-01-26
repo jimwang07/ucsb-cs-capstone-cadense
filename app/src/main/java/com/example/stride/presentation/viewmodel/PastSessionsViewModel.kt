@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.stride.data.dao.SessionDao
 import com.example.stride.presentation.ui.SessionData
+import com.example.stride.timing.TimingStats
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -17,13 +18,27 @@ class PastSessionsViewModel(
     // Expose sessions as StateFlow<List<SessionData>> for the UI
     val sessions: StateFlow<List<SessionData>> =
         sessionDao
-            .getAllSessions()              // Flow<List<Session>>
+            .getAllSessions() // Flow<List<Session>>
             .map { list ->
                 list.map { s ->
+                    val totalStrikes = s.poleStrikes
+                    val onBeatPercent = s.onBeatPercent
+                    val avgOffsetMs = s.avgOffsetMs
+
+                    val onBeatStrikes =
+                        (totalStrikes * onBeatPercent / 100).coerceIn(0, totalStrikes)
+                    val offBeatStrikes = (totalStrikes - onBeatStrikes).coerceAtLeast(0)
+
                     SessionData(
-                        time = s.duration,          // map duration -> time (seconds)
+                        time = s.duration,     // duration -> time (seconds)
                         distance = s.distance,
-                        poleStrikes = s.poleStrikes
+                        poleStrikes = totalStrikes,
+                        timingStats = TimingStats(
+                            totalStrikes = totalStrikes,
+                            onBeatStrikes = onBeatStrikes,
+                            offBeatStrikes = offBeatStrikes,
+                            totalAbsoluteOffsetMs = avgOffsetMs.toLong() * totalStrikes.toLong()
+                        )
                     )
                 }
             }
