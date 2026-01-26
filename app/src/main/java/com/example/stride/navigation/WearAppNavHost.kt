@@ -20,6 +20,7 @@ import com.example.stride.presentation.ui.SessionCompleteScreen
 import com.example.stride.presentation.ui.SessionData
 import com.example.stride.presentation.ui.SessionScreen
 import com.example.stride.presentation.ui.SettingsScreen
+import com.example.stride.presentation.ui.TapBpmScreen
 import com.example.stride.presentation.viewmodel.MetronomeViewModel
 import com.example.stride.presentation.viewmodel.PastSessionsViewModel
 import com.example.stride.presentation.viewmodel.PastSessionsViewModelFactory
@@ -58,6 +59,13 @@ fun WearAppNavHost(
             val bpm by settingsViewModel.defaultBpm.collectAsState()
             AdjustMetronomeScreen(
                 bpm = bpm,
+                onBpmChange = { settingsViewModel.setDefaultBpm(it) },
+                onTapBpm = { navController.navigate(Screen.TapBpm.route) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.TapBpm.route) {
+            TapBpmScreen(
                 onBpmChange = { settingsViewModel.setDefaultBpm(it) },
                 onBack = { navController.popBackStack() }
             )
