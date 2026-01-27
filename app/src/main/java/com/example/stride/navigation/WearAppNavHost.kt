@@ -109,7 +109,6 @@ fun WearAppNavHost(
             SessionCompleteScreen(
                 sessionData = SessionData(
                     time = time,
-                    distance = 0,
                     poleStrikes = poleStrikes,
                     timingStats = TimingStats(
                         totalStrikes = poleStrikes,
