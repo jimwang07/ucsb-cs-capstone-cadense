@@ -12,7 +12,7 @@ import kotlin.math.abs
 
 class PoleStrikeTimingManager(
     private val scope: CoroutineScope,
-    private val onBeatThresholdMs: Long = 100L,
+    private val onBeatThresholdMs: Long = 200L,
     private val feedbackDurationMs: Long = 300L
 ) {
     private val _timingFeedback = MutableStateFlow<TimingFeedback>(TimingFeedback.None)
