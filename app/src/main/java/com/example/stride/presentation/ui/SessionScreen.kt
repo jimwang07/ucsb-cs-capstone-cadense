@@ -115,13 +115,6 @@ fun SessionScreen(
     val hapticsController = remember { HapticsController(context) }
     val audioMetronome = remember { AudioMetronome() }
 
-    // --- Keep Screen On (vincent/session-overhaul) ---
-    DisposableEffect(Unit) {
-        val window = (context as? Activity)?.window
-        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
-    }
-
     // --- Pause when app goes background (vincent/session-overhaul) ---
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
