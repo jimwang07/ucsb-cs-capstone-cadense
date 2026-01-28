@@ -113,7 +113,7 @@ fun SessionScreen(
 
     // --- Feedback Controllers ---
     val hapticsController = remember { HapticsController(context) }
-    val audioMetronome = remember { AudioMetronome() }
+    val audioMetronome = remember { AudioMetronome(context) }
 
     // --- Pause when app goes background (vincent/session-overhaul) ---
     DisposableEffect(lifecycleOwner) {
@@ -212,7 +212,8 @@ fun SessionScreen(
             hapticsController.vibrate(30)
         }
         if (isAudioEnabled) {
-            audioMetronome.playBeep()
+            val beatInBar = ((beatCount - 1) % 4) + 1  // 1..4
+            audioMetronome.playBeat(beatInBar)         // beep boop beep boop
         }
     }
 
@@ -365,13 +366,13 @@ private fun VisualModeView(time: Int, beatCount: Int) {
 
 @Composable
 private fun MetronomeCircle(index: Int, currentBeat: Int) {
-    val isFilled = index <= currentBeat
+    val isFilled = index == currentBeat
 
     val targetColor: Color = when (index) {
-        0 -> ColorWhite
-        1 -> ColorMint
-        2 -> ColorWhite
-        3 -> ColorTeal
+        0 -> ColorTeal
+        1 -> ColorWhite
+        2 -> ColorMint
+        3 -> ColorWhite
         else -> ColorUnfilled
     }
 
