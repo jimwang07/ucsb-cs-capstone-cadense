@@ -209,7 +209,7 @@ fun SessionScreen(
         if (!isRunning || beatCount <= 0) return@LaunchedEffect
 
         if (isVibrationEnabled) {
-            hapticsController.vibrate(30)
+            hapticsController.vibrate(50)
         }
         if (isAudioEnabled) {
             audioMetronome.playBeep()
