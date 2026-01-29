@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.stride.data.dao.SessionDao
 import com.example.stride.data.entities.Session
 
-@Database(entities = [Session::class], version = 2)
+@Database(entities = [Session::class], version = 3)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
 
@@ -34,6 +34,35 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create a new table with the desired schema (without distance)
+                database.execSQL("""
+                    CREATE TABLE new_Session (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        timestamp INTEGER NOT NULL,
+                        duration INTEGER NOT NULL,
+                        poleStrikes INTEGER NOT NULL,
+                        onBeatPercent INTEGER NOT NULL,
+                        avgOffsetMs INTEGER NOT NULL
+                    )
+                """.trimIndent())
+
+                // Copy the data from the old table to the new table
+                database.execSQL("""
+                    INSERT INTO new_Session (id, timestamp, duration, poleStrikes, onBeatPercent, avgOffsetMs)
+                    SELECT id, timestamp, duration, poleStrikes, onBeatPercent, avgOffsetMs FROM Session
+                """.trimIndent())
+
+                // Remove the old table
+                database.execSQL("DROP TABLE Session")
+
+                // Rename the new table to the original table name
+                database.execSQL("ALTER TABLE new_Session RENAME TO Session")
+            }
+        }
+
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -41,9 +70,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "session_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
-                    .build()
-
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .build()
                 INSTANCE = instance
                 instance
             }

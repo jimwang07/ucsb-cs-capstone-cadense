@@ -4,7 +4,7 @@ import com.example.stride.data.dao.SessionDao
 import com.example.stride.data.entities.Session
 import kotlinx.coroutines.flow.Flow
 
-class LocationRepository(private val sessionDao: SessionDao) {
+class SessionRepository(private val sessionDao: SessionDao) {
 
     suspend fun insertSession(session: Session) {
         sessionDao.insert(session)

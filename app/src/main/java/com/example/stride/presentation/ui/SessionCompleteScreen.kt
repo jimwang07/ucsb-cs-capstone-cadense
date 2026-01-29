@@ -135,14 +135,6 @@ private fun StatisticsGrid(sessionData: SessionData) {
             unit = ""
         )
         StatRow(
-            icon = Icons.Default.Navigation,
-            iconBgColor = PurpleBg,
-            iconColor = PurpleIcon,
-            label = "Distance",
-            value = sessionData.distance.toString(),
-            unit = "m"
-        )
-        StatRow(
             icon = Icons.Default.Bolt,
             iconBgColor = AmberBg,
             iconColor = AmberIcon,

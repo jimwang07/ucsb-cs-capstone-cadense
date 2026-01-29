@@ -200,11 +200,6 @@ private fun PastSessionCard(
                     fontSize = (screenHeight.value * 0.07f).sp
                 )
                 Text(
-                    text = "${session.distance}m",
-                    color = White,
-                    fontSize = (screenHeight.value * 0.07f).sp
-                )
-                Text(
                     text = "${session.poleStrikes} strikes",
                     color = White,
                     fontSize = (screenHeight.value * 0.055f).sp
