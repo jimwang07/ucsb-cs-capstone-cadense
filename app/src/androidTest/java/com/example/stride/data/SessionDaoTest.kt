@@ -34,6 +34,8 @@ class SessionDaoTest {
         sessionDao = db.sessionDao()
     }
 
+
+
     @After
     @Throws(IOException::class)
     fun closeDb() {
@@ -44,7 +46,7 @@ class SessionDaoTest {
     @Throws(Exception::class)
     fun insertAndGetSession() = runBlocking {
         // Arrange
-        val originalSession = Session(timestamp = 1L, duration = 100, distance = 1000, poleStrikes = 500)
+        val originalSession = Session(timestamp = 1L, duration = 100, poleStrikes = 500)
         sessionDao.insert(originalSession)
 
         // Act

@@ -80,11 +80,10 @@ fun WearAppNavHost(
             SessionScreen(
                 metronomeViewModel = metronomeViewModel,
                 settingsViewModel = settingsViewModel,
-                onEndSession = { time, distance, poleStrikes, timingStats ->
+                onEndSession = { time, poleStrikes, timingStats ->
                     navController.navigate(
                         Screen.SessionComplete.createRoute(
                             time = time,
-                            distance = distance,
                             poleStrikes = poleStrikes,
                             onBeatPercent = timingStats.onBeatPercentage.toInt(),
                             avgOffset = timingStats.averageOffsetMs.toInt()
@@ -98,21 +97,18 @@ fun WearAppNavHost(
             route = Screen.SessionComplete.route,
             arguments = listOf(
                 navArgument("time") { type = NavType.IntType },
-                navArgument("distance") { type = NavType.IntType },
                 navArgument("poleStrikes") { type = NavType.IntType },
                 navArgument("onBeatPercent") { type = NavType.IntType },
                 navArgument("avgOffset") { type = NavType.IntType },
             )
         ) { backStackEntry ->
             val time = backStackEntry.arguments?.getInt("time") ?: 0
-            val distance = backStackEntry.arguments?.getInt("distance") ?: 0
             val poleStrikes = backStackEntry.arguments?.getInt("poleStrikes") ?: 0
             val onBeatPercent = backStackEntry.arguments?.getInt("onBeatPercent") ?: 0
             val avgOffset = backStackEntry.arguments?.getInt("avgOffset") ?: 0
             SessionCompleteScreen(
                 sessionData = SessionData(
                     time = time,
-                    distance = distance,
                     poleStrikes = poleStrikes,
                     timingStats = TimingStats(
                         totalStrikes = poleStrikes,
@@ -149,7 +145,6 @@ fun WearAppNavHost(
                         navController.navigate(
                             Screen.SessionComplete.createRoute(
                                 time = selected.time,
-                                distance = selected.distance,
                                 poleStrikes = selected.poleStrikes,
                                 onBeatPercent = selected.timingStats.onBeatPercentage.toInt(),
                                 avgOffset = selected.timingStats.averageOffsetMs.toInt()
