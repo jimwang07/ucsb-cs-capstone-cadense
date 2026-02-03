@@ -92,6 +92,7 @@ private val ColorOffBeat = Color(0xFFEF4444)
 fun SessionScreen(
     metronomeViewModel: MetronomeViewModel,
     settingsViewModel: SettingsViewModel,
+    startingBpm: Int? = null,
     onEndSession: (time: Int, poleStrikes: Int, timingStats: TimingStats) -> Unit,
     onBack: () -> Unit
 ) {
@@ -127,8 +128,12 @@ fun SessionScreen(
     }
 
     // --- Connect Settings BPM to Metronome BPM ---
-    LaunchedEffect(defaultBpm) {
-        metronomeViewModel.setBpm(defaultBpm)
+    LaunchedEffect(startingBpm, defaultBpm) {
+        if (startingBpm != null) {
+            metronomeViewModel.setBpm(startingBpm)
+        } else {
+            metronomeViewModel.setBpm(defaultBpm)
+        }
     }
 
     // --- Intro countdown state (MAIN) ---

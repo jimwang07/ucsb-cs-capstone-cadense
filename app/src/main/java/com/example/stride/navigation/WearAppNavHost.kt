@@ -14,12 +14,14 @@ import androidx.wear.compose.navigation.composable
 import com.example.stride.data.AppDatabase
 import com.example.stride.presentation.ui.AdjustMetronomeScreen
 import com.example.stride.presentation.ui.AdjustModesScreen
+import com.example.stride.presentation.ui.CalibrationScreen
 import com.example.stride.presentation.ui.LandingScreen
 import com.example.stride.presentation.ui.PastSessionsScreen
 import com.example.stride.presentation.ui.SessionCompleteScreen
 import com.example.stride.presentation.ui.SessionData
 import com.example.stride.presentation.ui.SessionScreen
 import com.example.stride.presentation.ui.SettingsScreen
+import com.example.stride.presentation.ui.StartSelectionScreen
 import com.example.stride.presentation.ui.TapBpmScreen
 import com.example.stride.presentation.viewmodel.MetronomeViewModel
 import com.example.stride.presentation.viewmodel.PastSessionsViewModel
@@ -41,13 +43,44 @@ fun WearAppNavHost(
     ) {
         composable(Screen.Landing.route) {
             val stopwatch by metronomeViewModel.stopwatch.collectAsState()
+            val currentBpm by metronomeViewModel.bpm.collectAsState()
             LandingScreen(
-                onStartSession = { navController.navigate(Screen.Session.route) },
+                onStartSession = {
+                    if (stopwatch > 0) {
+                        navController.navigate(Screen.Session.createRoute(currentBpm))
+                    } else {
+                        navController.navigate(Screen.StartSelection.route)
+                    }
+                },
                 onShowSettings = { navController.navigate(Screen.Settings.route) },
                 onShowPastSessions = { navController.navigate(Screen.PastSessions.route) },
                 isSessionInProgress = stopwatch > 0
             )
         }
+
+        composable(Screen.StartSelection.route) {
+            val defaultBpm by settingsViewModel.defaultBpm.collectAsState()
+            StartSelectionScreen(
+                onStandardSelected = {
+                    navController.navigate(Screen.Session.createRoute(defaultBpm))
+                },
+                onCalibrationSelected = {
+                    navController.navigate(Screen.Calibration.route)
+                }
+            )
+        }
+
+        composable(Screen.Calibration.route) {
+            CalibrationScreen(
+                onCalibrationComplete = { bpm ->
+                    navController.navigate(Screen.Session.createRoute(bpm)) {
+                        // Pop calibration screen from backstack so back goes to landing/selection
+                        popUpTo(Screen.StartSelection.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onAdjustMetronome = { navController.navigate(Screen.AdjustMetronome.route) },
@@ -76,10 +109,15 @@ fun WearAppNavHost(
                 onBack = { navController.popBackStack() }
             )
         }
-        composable(Screen.Session.route) {
+        composable(
+            route = Screen.Session.route,
+            arguments = listOf(navArgument("bpm") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val bpm = backStackEntry.arguments?.getInt("bpm") ?: 60
             SessionScreen(
                 metronomeViewModel = metronomeViewModel,
                 settingsViewModel = settingsViewModel,
+                startingBpm = bpm,
                 onEndSession = { time, poleStrikes, timingStats ->
                     navController.navigate(
                         Screen.SessionComplete.createRoute(
