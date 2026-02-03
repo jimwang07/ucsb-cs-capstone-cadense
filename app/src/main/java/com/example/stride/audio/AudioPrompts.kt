@@ -15,7 +15,7 @@ class AudioPrompts(private val context: Context, private val onAllLoaded: () -> 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     enum class Prompt {
-        GET_READY, THREE, TWO, ONE, GO
+        GET_READY, THREE, TWO, ONE, GO, CALIBRATING_PACE
     }
 
     init {
@@ -25,14 +25,14 @@ class AudioPrompts(private val context: Context, private val onAllLoaded: () -> 
             .build()
 
         soundPool = SoundPool.Builder()
-            .setMaxStreams(5)
+            .setMaxStreams(6)
             .setAudioAttributes(audioAttributes)
             .build()
 
         soundPool.setOnLoadCompleteListener { _, sampleId, status ->
             if (status == 0) {
                 loadedSounds.add(sampleId)
-                if (loadedSounds.size == 5) {
+                if (loadedSounds.size == Prompt.values().size) {
                     onAllLoaded()
                 }
             }
@@ -44,6 +44,7 @@ class AudioPrompts(private val context: Context, private val onAllLoaded: () -> 
         sounds[Prompt.TWO] = soundPool.load(context, R.raw.two, 1)
         sounds[Prompt.ONE] = soundPool.load(context, R.raw.one, 1)
         sounds[Prompt.GO] = soundPool.load(context, R.raw.go, 1)
+        sounds[Prompt.CALIBRATING_PACE] = soundPool.load(context, R.raw.calibrating_pace, 1)
     }
 
     fun play(prompt: Prompt) {
@@ -51,7 +52,7 @@ class AudioPrompts(private val context: Context, private val onAllLoaded: () -> 
         if (loadedSounds.contains(soundId)) {
             // Get current and max volume for the stream
             val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM).toFloat()
-            
+
             // Play at max volume for the stream
             soundPool.play(soundId, 1.0f, 1.0f, 1, 0, 1f)
         }
