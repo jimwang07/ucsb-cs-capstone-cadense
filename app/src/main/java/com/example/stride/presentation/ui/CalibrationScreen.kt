@@ -10,6 +10,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
+import com.example.stride.audio.AudioPrompts
 import com.example.stride.sensors.PoleStrikeDetector
 import kotlinx.coroutines.delay
 
@@ -19,11 +20,23 @@ fun CalibrationScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
+    var isAudioReady by remember { mutableStateOf(false) }
+    val audioPrompts = remember {
+        AudioPrompts(context, onAllLoaded = { isAudioReady = true })
+    }
+
     val poleStrikeDetector = remember { PoleStrikeDetector(context, coroutineScope) }
     
     var strikeCount by remember { mutableIntStateOf(0) }
     var isDone by remember { mutableStateOf(false) }
     val strikeTimestamps = remember { mutableStateListOf<Long>() }
+
+    LaunchedEffect(isAudioReady) {
+        if (isAudioReady) {
+            audioPrompts.play(AudioPrompts.Prompt.CALIBRATING_PACE)
+        }
+    }
 
     LaunchedEffect(Unit) {
         poleStrikeDetector.startDetection()
@@ -43,6 +56,12 @@ fun CalibrationScreen(
                     onCalibrationComplete(calculatedBpm)
                 }
             }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            audioPrompts.release()
         }
     }
 
