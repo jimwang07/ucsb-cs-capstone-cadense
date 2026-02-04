@@ -8,8 +8,8 @@ sealed class Screen(val route: String) {
     object AdjustModes : Screen("adjust_modes")
     object StartSelection : Screen("start_selection")
     object Calibration : Screen("calibration")
-    object Session : Screen("session/{bpm}") {
-        fun createRoute(bpm: Int) = "session/$bpm"
+    object Session : Screen("session/{bpm}/{skipCountdown}") {
+        fun createRoute(bpm: Int, skipCountdown: Boolean = false) = "session/$bpm/$skipCountdown"
     }
     object SessionComplete : Screen("session_complete/{time}/{poleStrikes}/{onBeatPercent}/{avgOffset}") {
         fun createRoute(
