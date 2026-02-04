@@ -22,7 +22,7 @@ class PoleStrikeDetector(
     private val _strikeEvents = MutableSharedFlow<PoleStrikeEvent>()
     val strikeEvents: SharedFlow<PoleStrikeEvent> = _strikeEvents.asSharedFlow()
 
-    private val strikeThreshold = 30f  // m/s^2
+    private val strikeThreshold =  30f // m/s^2
     private val strikeCooldownMs = 250L
     private var lastStrikeTimestamp = 0L
 

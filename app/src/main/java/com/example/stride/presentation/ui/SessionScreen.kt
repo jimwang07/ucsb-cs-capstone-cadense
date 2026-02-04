@@ -93,6 +93,7 @@ fun SessionScreen(
     metronomeViewModel: MetronomeViewModel,
     settingsViewModel: SettingsViewModel,
     startingBpm: Int? = null,
+    skipCountdown: Boolean = false,
     onEndSession: (time: Int, poleStrikes: Int, timingStats: TimingStats) -> Unit,
     onBack: () -> Unit
 ) {
@@ -143,7 +144,7 @@ fun SessionScreen(
     }
 
     var countdownValue by remember { mutableIntStateOf(3) }
-    var isCountdownActive by remember { mutableStateOf(isBrandNewSession) }
+    var isCountdownActive by remember { mutableStateOf(isBrandNewSession && !skipCountdown) }
     var isAudioReady by remember { mutableStateOf(false) }
 
     // --- Audio Prompts (MAIN) ---
@@ -180,6 +181,13 @@ fun SessionScreen(
             if (!metronomeViewModel.isRunning.value) {
                 metronomeViewModel.toggle()
             }
+        }
+    }
+
+    // Immediately start metronome if skipping countdown
+    LaunchedEffect(skipCountdown, isBrandNewSession) {
+        if (skipCountdown && isBrandNewSession && !metronomeViewModel.isRunning.value) {
+            metronomeViewModel.toggle()
         }
     }
 

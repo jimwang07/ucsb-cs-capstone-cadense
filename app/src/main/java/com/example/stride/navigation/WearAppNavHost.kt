@@ -73,7 +73,7 @@ fun WearAppNavHost(
         composable(Screen.Calibration.route) {
             CalibrationScreen(
                 onCalibrationComplete = { bpm ->
-                    navController.navigate(Screen.Session.createRoute(bpm)) {
+                    navController.navigate(Screen.Session.createRoute(bpm, skipCountdown = true)) {
                         // Pop calibration screen from backstack so back goes to landing/selection
                         popUpTo(Screen.StartSelection.route) { inclusive = true }
                     }
@@ -111,13 +111,18 @@ fun WearAppNavHost(
         }
         composable(
             route = Screen.Session.route,
-            arguments = listOf(navArgument("bpm") { type = NavType.IntType })
+            arguments = listOf(
+                navArgument("bpm") { type = NavType.IntType },
+                navArgument("skipCountdown") { type = NavType.BoolType }
+            )
         ) { backStackEntry ->
             val bpm = backStackEntry.arguments?.getInt("bpm") ?: 60
+            val skipCountdown = backStackEntry.arguments?.getBoolean("skipCountdown") ?: false
             SessionScreen(
                 metronomeViewModel = metronomeViewModel,
                 settingsViewModel = settingsViewModel,
                 startingBpm = bpm,
+                skipCountdown = skipCountdown,
                 onEndSession = { time, poleStrikes, timingStats ->
                     navController.navigate(
                         Screen.SessionComplete.createRoute(
