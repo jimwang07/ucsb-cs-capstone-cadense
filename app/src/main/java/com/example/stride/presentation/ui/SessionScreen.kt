@@ -1,8 +1,8 @@
 package com.example.stride.presentation.ui
 
-import android.app.Activity
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.util.Log
-import android.view.WindowManager
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
@@ -240,6 +240,25 @@ fun SessionScreen(
         label = "borderColor"
     )
 
+    // --- Strike Timing Audio Feedback ---
+    val strikeToneGenerator = remember {
+        ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+    }
+
+    LaunchedEffect(timingFeedback) {
+        when (timingFeedback) {
+            is TimingFeedback.OnBeat -> {
+                // Pleasant confirmation tone for on-beat strikes
+                strikeToneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 100)
+            }
+            is TimingFeedback.OffBeat -> {
+                // Error tone for off-beat strikes
+                strikeToneGenerator.startTone(ToneGenerator.TONE_PROP_NACK, 150)
+            }
+            is TimingFeedback.None -> { /* No tone */ }
+        }
+    }
+
     // --- Cleanup when leaving screen ---
     // IMPORTANT: do NOT hard-stop on dispose (so you can re-enter without weird restarts).
     // We pause if running, and release resources.
@@ -251,6 +270,7 @@ fun SessionScreen(
             hapticsController.cancel()
             audioMetronome.release()
             audioPrompts.release()
+            strikeToneGenerator.release()
             timingManager.reset()
         }
     }
