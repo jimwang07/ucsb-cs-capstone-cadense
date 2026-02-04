@@ -66,7 +66,8 @@ fun WearAppNavHost(
                 },
                 onCalibrationSelected = {
                     navController.navigate(Screen.Calibration.route)
-                }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
