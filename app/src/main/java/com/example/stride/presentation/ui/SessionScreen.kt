@@ -259,10 +259,7 @@ fun SessionScreen(
                 // Pleasant confirmation tone for on-beat strikes
                 strikeToneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 100)
             }
-            is TimingFeedback.OffBeat -> {
-                // Error tone for off-beat strikes
-                strikeToneGenerator.startTone(ToneGenerator.TONE_PROP_NACK, 150)
-            }
+            is TimingFeedback.OffBeat -> { /* No tone */ }
             is TimingFeedback.None -> { /* No tone */ }
         }
     }
