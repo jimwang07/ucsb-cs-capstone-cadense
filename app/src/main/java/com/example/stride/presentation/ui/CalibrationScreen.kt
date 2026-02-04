@@ -50,10 +50,13 @@ fun CalibrationScreen(
                     // Calculate BPM based on 10 strikes (9 intervals)
                     val totalDurationMs = strikeTimestamps.last() - strikeTimestamps.first()
                     val avgIntervalMs = totalDurationMs / (strikeCount - 1)
-                    val calculatedBpm = (60000 / avgIntervalMs).toInt()
+                    val detectedBpm = (60000 / avgIntervalMs).toInt()
+                    
+                    // Use 2x the detected BPM for the session
+                    val finalBpm = detectedBpm * 2
                     
                     delay(2000) // Show "Calibration Done" for 2 seconds
-                    onCalibrationComplete(calculatedBpm)
+                    onCalibrationComplete(finalBpm)
                 }
             }
         }
