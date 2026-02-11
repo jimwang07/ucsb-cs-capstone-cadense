@@ -22,7 +22,7 @@ class PoleStrikeDetector(
     private val lag: Int = 25,
     private val threshold: Float = 5.0f,
     private val influence: Float = 0.1f,
-    private val absoluteThreshold: Float = 15.0f,
+    private val absoluteThreshold: Float = 1.0f,
     private val peakWindowMs: Long = 300 // Cooldown window after a strike
 ) {
     private val sensorManagerWrapper = SensorManagerWrapper(context)

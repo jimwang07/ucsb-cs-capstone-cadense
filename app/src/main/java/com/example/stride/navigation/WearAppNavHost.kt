@@ -73,6 +73,7 @@ fun WearAppNavHost(
 
         composable(Screen.Calibration.route) {
             CalibrationScreen(
+                settingsViewModel = settingsViewModel,
                 onCalibrationComplete = { bpm ->
                     navController.navigate(Screen.Session.createRoute(bpm, skipCountdown = true)) {
                         // Pop calibration screen from backstack so back goes to landing/selection
