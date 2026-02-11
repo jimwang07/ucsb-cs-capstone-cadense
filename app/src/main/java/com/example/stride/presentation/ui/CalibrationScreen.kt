@@ -55,7 +55,6 @@ fun CalibrationScreen(
                     // Use 2x the detected BPM for the session
                     val finalBpm = detectedBpm * 2
                     
-                    delay(2000) // Show "Calibration Done" for 2 seconds
                     onCalibrationComplete(finalBpm)
                 }
             }
@@ -85,13 +84,6 @@ fun CalibrationScreen(
                 text = "Beats detected: $strikeCount / 10",
                 fontSize = 14.sp,
                 color = Color.LightGray
-            )
-        } else {
-            Text(
-                text = "Calibration Done!\nBeginning Session...",
-                textAlign = TextAlign.Center,
-                fontSize = 18.sp,
-                color = Color.Green
             )
         }
     }
