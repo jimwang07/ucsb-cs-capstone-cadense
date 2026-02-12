@@ -43,15 +43,13 @@ fun CalibrationScreen(
     var strikeCount by remember { mutableIntStateOf(0) }
     val strikeTimestamps = remember { mutableStateListOf<Long>() }
     
-    var currentBpm by remember { mutableIntStateOf(defaultBpm * 2) }
+    var currentBpm by remember { mutableIntStateOf(defaultBpm) }
     var beatCount by remember { mutableIntStateOf(0) }
     var metronomeStarted by remember { mutableStateOf(false) }
 
     LaunchedEffect(isAudioReady) {
         if (isAudioReady) {
             audioPrompts.play(AudioPrompts.Prompt.CALIBRATING_PACE)
-            delay(2000) // Give time for the "Calibrating pace" prompt
-            metronomeStarted = true
         }
     }
 
@@ -67,7 +65,8 @@ fun CalibrationScreen(
                     val beatInBar = ((beatCount - 1) % 4) + 1
                     audioMetronome.playBeat(beatInBar)
                 }
-                delay(60000L / currentBpm.coerceAtLeast(1))
+                // Use a safe minimum BPM to avoid division by zero or extreme delays
+                delay(60000L / currentBpm.coerceAtLeast(10))
             }
         }
     }
@@ -85,12 +84,18 @@ fun CalibrationScreen(
                     val avgIntervalMs = totalDurationMs / (strikeCount - 1)
                     if (avgIntervalMs > 0) {
                         val detectedBpm = (60000 / avgIntervalMs).toInt()
-                        currentBpm = detectedBpm * 2
+                        
+                        if (strikeCount == 10) {
+                            // Only double the BPM once all 10 strikes are done
+                            val finalBpm = detectedBpm * 2
+                            currentBpm = finalBpm
+                            onCalibrationComplete(finalBpm)
+                        } else {
+                            // During calibration, use the detected BPM directly to match pace
+                            currentBpm = detectedBpm
+                            metronomeStarted = true
+                        }
                     }
-                }
-                
-                if (strikeCount == 10) {
-                    onCalibrationComplete(currentBpm)
                 }
             }
         }
@@ -122,10 +127,18 @@ fun CalibrationScreen(
             color = Color.LightGray
         )
         Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = "Current BPM: $currentBpm",
-            fontSize = 14.sp,
-            color = Color.Cyan
-        )
+        if (metronomeStarted) {
+            Text(
+                text = "Current BPM: $currentBpm",
+                fontSize = 14.sp,
+                color = Color.Cyan
+            )
+        } else {
+            Text(
+                text = "Detecting pace...",
+                fontSize = 14.sp,
+                color = Color.Yellow
+            )
+        }
     }
 }
