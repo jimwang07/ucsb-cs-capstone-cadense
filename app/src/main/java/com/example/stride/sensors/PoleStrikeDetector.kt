@@ -31,6 +31,7 @@ class PoleStrikeDetector(
     val strikeEvents: SharedFlow<PoleStrikeEvent> = _strikeEvents.asSharedFlow()
 
     private var detectionJob: Job? = null
+    private var manualTriggerJob: Job? = null
 
     // Algorithm state variables
     private val dataWindow = ArrayDeque<Float>(lag)
@@ -51,6 +52,14 @@ class PoleStrikeDetector(
         detectionJob = scope.launch {
             sensorManagerWrapper.getAccelerometerSensorFlow().collect { sample ->
                 detectPoleStrike(sample)
+            }
+        }
+
+        manualTriggerJob = scope.launch {
+            ManualStrikeTrigger.events.collect {
+                val timestamp = System.currentTimeMillis()
+                _strikeEvents.emit(PoleStrikeEvent(timestamp, 20.0f)) // Simulated peak
+                lastStrikeTimestamp = timestamp
             }
         }
     }

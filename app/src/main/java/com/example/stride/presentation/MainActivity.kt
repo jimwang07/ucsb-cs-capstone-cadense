@@ -1,6 +1,7 @@
 package com.example.stride.presentation
 
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +12,7 @@ import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.example.stride.navigation.WearAppNavHost
 import com.example.stride.presentation.theme.TestLockScreenTheme
 import com.example.stride.presentation.viewmodel.MetronomeViewModel
+import com.example.stride.sensors.ManualStrikeTrigger
 
 class MainActivity : ComponentActivity() {
 
@@ -27,6 +29,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             WearApp(metronomeViewModel)
         }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_SPACE) {
+            ManualStrikeTrigger.trigger()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 }
 
