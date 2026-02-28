@@ -215,6 +215,20 @@ fun SessionScreen(
         if (!isRunning) hapticsController.cancel()
     }
 
+    // --- Auto-end session on inactivity ---
+    LaunchedEffect(isRunning, poleStrikes, isCountdownActive) {
+        if (isRunning && !isCountdownActive) {
+            delay(60000L) // 60 seconds of inactivity
+            Log.d("SessionScreen", "Inactivity timeout reached - auto-ending session")
+            val finalTime = stopwatch.toInt()
+            val finalStrikes = poleStrikes
+
+            metronomeViewModel.saveSession(finalTime, finalStrikes, timingStats)
+            metronomeViewModel.stop()
+            onEndSession(finalTime, finalStrikes, timingStats)
+        }
+    }
+
     // --- Metronome Feedback per beat (MAIN) ---
     LaunchedEffect(beatCount) {
         if (isCountdownActive) return@LaunchedEffect
@@ -259,7 +273,9 @@ fun SessionScreen(
                 // Pleasant confirmation tone for on-beat strikes
                 strikeToneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 100)
             }
-            is TimingFeedback.OffBeat -> { /* No tone */ }
+            is TimingFeedback.OffBeat -> {
+                strikeToneGenerator.startTone(ToneGenerator.TONE_PROP_NACK, 100)
+            }
             is TimingFeedback.None -> { /* No tone */ }
         }
     }
