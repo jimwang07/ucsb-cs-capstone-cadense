@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -23,8 +22,12 @@ class PoleStrikeDetector(
     private val threshold: Float = 5.0f,
     private val influence: Float = 0.1f,
     private val absoluteThreshold: Float = 15.0f,
-    private val peakWindowMs: Long = 300 // Cooldown window after a strike
+    private val peakWindowMs: Long = 300,
+    private val maxPeakWidthMs: Long = 40,
+    private val minRiseRateMs: Float = 0.5f,  // m/s² per ms — minimum slope to count as a strike
+    private val riseRateWindowMs: Long = 10   // measure slope over this window
 ) {
+
     private val sensorManagerWrapper = SensorManagerWrapper(context)
 
     private val _strikeEvents = MutableSharedFlow<PoleStrikeEvent>()
@@ -41,6 +44,22 @@ class PoleStrikeDetector(
     // Cooldown tracking
     private var lastStrikeTimestamp: Long = 0
 
+    // Peak tracking
+    private var peakStartTimestamp: Long = 0
+    private var peakSampleCount: Int = 0
+    private var peakMaxValue: Float = 0f
+    private var trackingPeak = false
+    private var peakRiseRate: Float = 0f
+
+    // Slope tracking
+    private var lastSampleTimestamp: Long = 0
+    private var lastSampleValue: Float = 0f
+
+    companion object {
+        private const val SAMPLING_RATE_HZ = 104
+        private const val SAMPLING_PERIOD_US = 1_000_000 / SAMPLING_RATE_HZ
+    }
+
     fun startDetection() {
         dataWindow.clear()
         filteredDataWindow.clear()
@@ -48,49 +67,99 @@ class PoleStrikeDetector(
         stdFilter = 0.0f
         lastStrikeTimestamp = 0
 
+        peakStartTimestamp = 0
+        peakSampleCount = 0
+        peakMaxValue = 0f
+        trackingPeak = false
+        peakRiseRate = 0f
+
+        lastSampleTimestamp = 0
+        lastSampleValue = 0f
+
         detectionJob = scope.launch {
-            sensorManagerWrapper.getAccelerometerSensorFlow().collect { sample ->
+            sensorManagerWrapper.getAccelerometerSensorFlow(SAMPLING_PERIOD_US).collect { sample ->
                 detectPoleStrike(sample)
             }
         }
     }
 
-       private suspend fun detectPoleStrike(sample: com.example.stride.data.entities.SensorSample) {
+    fun stopDetection() {
+        detectionJob?.cancel()
+        detectionJob = null
+    }
+
+    private suspend fun detectPoleStrike(sample: com.example.stride.data.entities.SensorSample) {
+
         val zValue = sample.value3 ?: return
         val timestamp = sample.timestamp
 
-        // Check if we are in the cooldown period
+        // Calculate instantaneous rise rate (slope) in m/s² per ms
+        val dt = if (lastSampleTimestamp > 0) (timestamp - lastSampleTimestamp).toFloat() else 1f
+        val riseRate = (zValue - lastSampleValue) / dt
+        lastSampleTimestamp = timestamp
+        lastSampleValue = zValue
+
         val isInCooldown = (timestamp - lastStrikeTimestamp) <= peakWindowMs
         if (isInCooldown) {
-            // Still update windows to keep the filter current
             updateWindows(zValue, zValue)
             recalculateFilters()
             return
         }
 
-        val isSignificantPeak = zValue > avgFilter && (zValue - avgFilter) > threshold * stdFilter
+        val isSignificantPeak =
+            zValue > avgFilter && (zValue - avgFilter) > threshold * stdFilter
+
         val isAboveAbsoluteThreshold = zValue > absoluteThreshold
 
-        if (isSignificantPeak && isAboveAbsoluteThreshold) {
-            // Emit the event immediately
-            _strikeEvents.emit(PoleStrikeEvent(timestamp, zValue))
-            // Start the cooldown
-            lastStrikeTimestamp = timestamp
+        val isPeakCandidate = isSignificantPeak && isAboveAbsoluteThreshold
 
-            // Update filtered value with influence
-            val lastFilteredValue = if (filteredDataWindow.isNotEmpty()) filteredDataWindow.last() else zValue
-            val filteredValue = influence * zValue + (1 - influence) * lastFilteredValue
-            updateWindows(zValue, filteredValue)
-        } else {
-            // No signal, update with the actual value
-            updateWindows(zValue, zValue)
+        if (isPeakCandidate) {
+
+            if (!trackingPeak) {
+                trackingPeak = true
+                peakStartTimestamp = timestamp
+                peakSampleCount = 1
+                peakMaxValue = zValue
+                peakRiseRate = riseRate  // Capture leading-edge slope
+            } else {
+                peakSampleCount++
+                if (zValue > peakMaxValue) peakMaxValue = zValue
+                if (riseRate > peakRiseRate) peakRiseRate = riseRate
+            }
+
+        } else if (trackingPeak) {
+
+            val peakWidth = timestamp - peakStartTimestamp
+            val isNarrowEnough = peakWidth <= maxPeakWidthMs
+            val isSteepEnough = peakRiseRate >= minRiseRateMs  // Reject slow-rising jerks
+
+            if (isNarrowEnough && isSteepEnough) {
+                _strikeEvents.emit(
+                    PoleStrikeEvent(
+                        peakStartTimestamp,
+                        peakMaxValue
+                    )
+                )
+                lastStrikeTimestamp = timestamp
+            }
+
+            trackingPeak = false
+            peakSampleCount = 0
+            peakMaxValue = 0f
+            peakRiseRate = 0f
         }
 
+        val lastFilteredValue =
+            if (filteredDataWindow.isNotEmpty()) filteredDataWindow.last() else zValue
+
+        val filteredValue =
+            influence * zValue + (1 - influence) * lastFilteredValue
+
+        updateWindows(zValue, filteredValue)
         recalculateFilters()
     }
 
     private fun recalculateFilters() {
-        // Recalculate the moving average and standard deviation
         avgFilter = calculateMean(filteredDataWindow)
         stdFilter = calculateStdDev(filteredDataWindow, avgFilter)
     }
@@ -99,7 +168,7 @@ class PoleStrikeDetector(
         dataWindow.addLast(newValue)
         filteredDataWindow.addLast(newFilteredValue)
 
-        if(dataWindow.size > lag) {
+        if (dataWindow.size > lag) {
             filteredDataWindow.removeFirst()
             dataWindow.removeFirst()
         }

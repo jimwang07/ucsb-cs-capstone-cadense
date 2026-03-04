@@ -15,7 +15,7 @@ class SensorManagerWrapper(private val context: Context) {
 
     private val sensorManager: SensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
-    fun getAccelerometerSensorFlow(): Flow<SensorSample> = callbackFlow {
+    fun getAccelerometerSensorFlow(samplingPeriodUs: Int = SensorManager.SENSOR_DELAY_GAME): Flow<SensorSample> = callbackFlow {
         val accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         if (accelerometerSensor == null) {
             Log.e("SensorManagerWrapper", "Accelerometer not available")
@@ -47,7 +47,7 @@ class SensorManagerWrapper(private val context: Context) {
             }
         }
 
-        sensorManager.registerListener(sensorEventListener, accelerometerSensor, SensorManager.SENSOR_DELAY_GAME)
+        sensorManager.registerListener(sensorEventListener, accelerometerSensor, samplingPeriodUs)
 
         awaitClose { sensorManager.unregisterListener(sensorEventListener) }
     }
