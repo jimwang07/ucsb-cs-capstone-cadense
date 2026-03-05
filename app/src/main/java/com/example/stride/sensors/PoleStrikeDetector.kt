@@ -1,6 +1,7 @@
 package com.example.stride.sensors
 
 import android.content.Context
+import android.hardware.SensorManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -56,8 +57,7 @@ class PoleStrikeDetector(
     private var lastSampleValue: Float = 0f
 
     companion object {
-        private const val SAMPLING_RATE_HZ = 104
-        private const val SAMPLING_PERIOD_US = 1_000_000 / SAMPLING_RATE_HZ
+        private const val SAMPLING_PERIOD_US = SensorManager.SENSOR_DELAY_FASTEST
     }
 
     fun startDetection() {
