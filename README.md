@@ -1,6 +1,6 @@
 # STRIDE Wear OS App
 
-STRIDE is a Wear OS smartwatch application developed for a senior capstone project on rhythmic gait training for stroke rehabilitation. The app delivers a therapist-configured metronome, detects walking pole strikes from watch accelerometer data, compares each strike to the nearest metronome beat, and provides immediate visual, audio, and haptic feedback to help patients stay on rhythm while walking.
+STRIDE is a Wear OS smartwatch application that provides rhythmic gait training for stroke rehabilitation. The app delivers a therapist-configured metronome, detects walking pole strikes from watch accelerometer data, compares each strike to the nearest metronome beat, and provides immediate visual, audio, and haptic feedback to help patients stay on rhythm while walking.
 
 ![STRIDE watch interface](./Watch%20Face.jpg)
 
